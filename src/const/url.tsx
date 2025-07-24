@@ -1,0 +1,1 @@
+export const ReportBaseUrl = "https://insights.aiweaver.ai/";

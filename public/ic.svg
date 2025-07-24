@@ -1,0 +1,42 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle with gradient from blue to purple -->
+  <defs>
+    <linearGradient id="circleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4e5eff" />
+      <stop offset="100%" stop-color="#8c46ff" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="50" cy="50" r="45" fill="url(#circleGradient)" />
+  
+  <!-- Film Strip - Larger and more zoomed in -->
+  <path d="M28,34 
+           C28,32.343 29.343,31 31,31 
+           H69 
+           C70.657,31 72,32.343 72,34 
+           V66 
+           C72,67.657 70.657,69 69,69 
+           H31 
+           C29.343,69 28,67.657 28,66 
+           Z" 
+        fill="white" />
+  
+  <!-- Center hollow rectangle (top) -->
+  <rect x="34" y="37" width="32" height="12" fill="url(#circleGradient)" />
+  
+  <!-- Center hollow rectangle (bottom) -->
+  <rect x="34" y="51" width="32" height="12" fill="url(#circleGradient)" />
+  
+  <!-- Left perforations -->
+  <rect x="30" y="37" width="3" height="3" fill="url(#circleGradient)" rx="0.5" />
+  <rect x="30" y="44" width="3" height="3" fill="url(#circleGradient)" rx="0.5" />
+  <rect x="30" y="51" width="3" height="3" fill="url(#circleGradient)" rx="0.5" />
+  <rect x="30" y="58" width="3" height="3" fill="url(#circleGradient)" rx="0.5" />
+  
+  <!-- Right perforations -->
+  <rect x="67" y="37" width="3" height="3" fill="url(#circleGradient)" rx="0.5" />
+  <rect x="67" y="44" width="3" height="3" fill="url(#circleGradient)" rx="0.5" />
+  <rect x="67" y="51" width="3" height="3" fill="url(#circleGradient)" rx="0.5" />
+  <rect x="67" y="58" width="3" height="3" fill="url(#circleGradient)" rx="0.5" />
+</svg>

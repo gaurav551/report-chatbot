@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+body {
+    font-family: 'Poppins', sans-serif;
+  }
+  video::-webkit-media-poster {
+    object-fit: cover;
+  }
+/* Webkit browsers (Chrome, Safari, newer Edge) */
+::-webkit-scrollbar {
+  width: 4px !important; /* Slightly wider for usability but still minimal */
+  height: 4px !important; /* For horizontal scrollbars */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* Transparent track for minimal look */
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(12, 86, 188, 0.5); /* Semi-transparent blue */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(12, 86, 188, 0.8); /* More opaque on hover */
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin; /* "thin" is the most minimal option in Firefox */
+  scrollbar-color: rgba(12, 86, 188, 0.5) transparent; /* thumb color, track color */
+}
+
+/* For Edge and IE */
+body {
+  -ms-overflow-style: -ms-autohiding-scrollbar;
+}
+/* Base subtitle styling */
+video::cue {
+  font-size: calc(1.5vw + 10px) !important; /* Responsive font size */
+  line-height: 1.3 !important;
+  font-family: Arial, sans-serif !important;
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  color: white !important;
+}
+
+/* Container for text tracks */
+video::-webkit-media-text-track-container {
+  font-size: calc(1.5vw + 10px) !important; /* Match the responsive font size */
+  bottom: 10% !important;
+}
+
+/* Display of text tracks */
+video::-webkit-media-text-track-display {
+  font-size: calc(1.5vw + 10px) !important; /* Match the responsive font size */
+  padding: 0.5vw 1vw !important; /* Responsive padding */
+}
+
+/* Firefox-specific selector */
+.vjs-text-track-display {
+  font-size: calc(1.5vw + 10px) !important;
+}
+
+/* For some HTML5 players */
+.mejs-captions-text {
+  font-size: calc(1.5vw + 10px) !important;
+}
+
+/* For YouTube specific subtitles */
+.ytp-caption-segment {
+  font-size: calc(1.5vw + 10px) !important;
+}
