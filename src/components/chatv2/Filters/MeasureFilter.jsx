@@ -5,7 +5,7 @@ import axios from 'axios';
 // API function to fetch measure statistics
 const fetchMeasureStats = async (userId, sessionId) => {
   const response = await axios.get(
-    `http://agentic.aiweaver.ai/api/rpt2/measures?user_id=${userId}&session_id=${sessionId}`
+    `https://agentic.aiweaver.ai/api/rpt2/measures?user_id=${userId}&session_id=${sessionId}`
   );
   return response.data;
 };

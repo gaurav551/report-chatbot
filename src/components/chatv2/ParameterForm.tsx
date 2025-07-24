@@ -15,7 +15,7 @@ interface ParameterFormProps {
   disabled?: boolean;
 }
 
-const API_BASE_URL = 'http://agentic.aiweaver.ai/api';
+const API_BASE_URL = 'https://agentic.aiweaver.ai/api';
 
 export const ParameterForm: React.FC<ParameterFormProps> = ({
   sessionId,
