@@ -191,7 +191,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName, ses
                   </div>
 
                   {/* Iframe container (shared) */}
-                  <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4' : 'w-full h-[500px]'} transition-all`}>
+                  <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4' : 'w-full h-[500px] relative'} transition-all`}>
                     <div className={`bg-white rounded-lg border border-gray-200 w-full h-full max-w-7xl mx-auto overflow-hidden flex flex-col`}>
                       {isFullscreen && (
                         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
@@ -210,6 +210,21 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName, ses
                       )}
                       <iframe src={message.reportUrl} className="w-full flex-1" title="Report" />
                     </div>
+
+                    {/* Floating fullscreen toggle button - only show when not in fullscreen */}
+                    {/* {!isFullscreen && (
+                      <button
+                        onClick={toggleFullscreen}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 
+                                   bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900
+                                   shadow-lg hover:shadow-xl border border-gray-200
+                                   rounded-full p-3 transition-all duration-200 ease-in-out
+                                   hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                        title="View fullscreen"
+                      >
+                        <Maximize2 className="w-5 h-5" />
+                      </button>
+                    )} */}
                   </div>
 
                   {!isFullscreen && renderDownloadButtons()}

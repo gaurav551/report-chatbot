@@ -7,7 +7,7 @@ import {
   ChatSession,
   Message,
 } from "../../interfaces/Message";
-import { Bot, RotateCcw, MessageCircle } from "lucide-react";
+import { Bot, RotateCcw, MessageCircle, Send } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { ParameterForm, ParameterFormData } from "./ParameterForm";
@@ -50,6 +50,8 @@ export const ChatInterface: React.FC<{
   session: ChatSession;
   onClearSession: () => void;
 }> = ({ session, onClearSession }) => {
+  const advanceFilterRef = useRef(null);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [apiSessionId, setApiSessionId] = useState<string>("");
   const [chatCleared, setChatCleared] = useState(false);
@@ -319,13 +321,15 @@ export const ChatInterface: React.FC<{
   };
 
   const addFilterMessage = (
-    dimensionFiltersQuery: any,
-    measureFiltersQuery: any
+    dimensionFiltersExpQuery: any,
+    measureFilterExpQuery: any,
+    dimensionFiltersRevQuery: any,
+    measureFiltersRevQuery: any
   ) => {
     // Create a message with the filter data
     const filterText = `Applied filters - Dimensions: ${JSON.stringify(
-      dimensionFiltersQuery
-    )}, Measures: ${JSON.stringify(measureFiltersQuery)}`;
+      dimensionFiltersRevQuery
+    )}, Measures: ${JSON.stringify(measureFiltersRevQuery)}`;
 
     const newMessage: Message = {
       id: Date.now().toString(),
@@ -340,11 +344,11 @@ export const ChatInterface: React.FC<{
     // You'll need to map dimensionFiltersQuery and measureFiltersQuery to the appropriate filter fields
     const updatedFilters = {
       measures_requested_rev: null,
-      dimension_filter_rev: dimensionFiltersQuery || null,
-      measures_filter_rev: null,
+      dimension_filter_rev: measureFiltersRevQuery || null,
+      measures_filter_rev: measureFiltersRevQuery,
       measures_requested_exp: null,
-      dimension_filter_exp: null,
-      measures_filter_exp: measureFiltersQuery || null,
+      dimension_filter_exp: dimensionFiltersExpQuery,
+      measures_filter_exp: measureFilterExpQuery || null,
     };
 
     setFilterParams(updatedFilters);
@@ -357,21 +361,24 @@ export const ChatInterface: React.FC<{
 
   const handleMessage = async (messageText: string) => {
     // Hide the cleared message when user starts typing
-    if (chatCleared) {
-      setChatCleared(false);
+    // if (chatCleared) {
+    //   setChatCleared(false);
+    // }
+
+    // addUserMessage(messageText);
+    if (advanceFilterRef.current) {
+      advanceFilterRef.current.handleSubmit();
     }
 
-    addUserMessage(messageText);
-
-    try {
-      await chatMutation.mutateAsync({
-        session_id: apiSessionId,
-        user_message: messageText,
-        report_name: "rpt2",
-      });
-    } catch (error) {
-      console.error("Error sending message:", error);
-    }
+    // try {
+    //   await chatMutation.mutateAsync({
+    //     session_id: apiSessionId,
+    //     user_message: messageText,
+    //     report_name: "rpt2",
+    //   });
+    // } catch (error) {
+    //   console.error("Error sending message:", error);
+    // }
   };
 
   return (
@@ -481,7 +488,7 @@ export const ChatInterface: React.FC<{
               <div className="text-center text-gray-500">
                 <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-400" />
                 <p className="text-lg font-medium">Chat cleared</p>
-                <p className="text-sm">Start typing to begin</p>
+                <p className="text-sm">You can continue or start a new conversation</p>
               </div>
             </div>
           ) : (
@@ -509,25 +516,28 @@ export const ChatInterface: React.FC<{
               <div ref={messagesEndRef} />
             </div>
           )}
-          {messages.length > 0 && (
-            <AdvanceFilter
-              key={messages.length}
-              onFiltersApplied={addFilterMessage}
-            />
-          )}
+         {messages.length > 0 && messages.some((msg) => msg.type === "report") && (
+  <AdvanceFilter
+    ref={advanceFilterRef as any}
+    key={messages.length}
+    onFiltersApplied={addFilterMessage}
+  />
+)}
         </div>
 
         {/* Input */}
-        <div className="bg-white border-t border-gray-200 px-6 py-4">
+ <div className="bg-white border-t border-gray-200 px-6 py-4">
           <ChatInput
             onSendMessage={handleMessage}
-            disabled={
-              chatMutation.isPending || reportGenerationMutation.isPending
+              disabled={
+              chatMutation.isPending ||
+              reportGenerationMutation.isPending ||
+              reportParams === null 
             }
             placeholder="Chat is disabled for now, please set report parameters from selection above"
           />
         </div>
-      </div>
+        </div>
     </div>
   );
 };

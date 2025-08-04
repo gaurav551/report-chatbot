@@ -31,13 +31,13 @@ function App() {
                 {/* pt-16 to account for fixed navbar */}
                 <Suspense fallback={<LoadingSpinner />}>
                   <Routes>
-                    <Route path="/" element={<Chat />} />
-                    <Route path="/user/:userId" element={<Chat />} />
-                    <Route path="/v2" element={<ChatV2 />} />
+                    <Route path="/chat/" element={<Chat />} />
+                    <Route path="/chat/user/:userId" element={<Chat />} />
+                    <Route path="/" element={<ChatV2 />} />
 
                     {/* User route with userId parameter */}
 
-                    <Route path="/v2/user/:userId" element={<ChatV2 />} />
+                    <Route path="/user/:userId" element={<ChatV2 />} />
 
                     {/* Catch-all route for 404 - redirects to styled NotFound */}
                     <Route path="*" element={<NotFound />} />

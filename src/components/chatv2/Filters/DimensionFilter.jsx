@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, Loader2, AlertCircle } from 'lucide-react';
+import { Search, ChevronDown, Loader2, AlertCircle, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-  const userId = localStorage.getItem('user');
-  const sessionId = localStorage.getItem('session_id');
+import ModernSelect from '../../ui/ModernSelect';
+
 // API function to fetch dimensions
 const fetchDimensions = async () => {
-
-  
-  if (!userId || !sessionId) {
-    throw new Error('User ID or Session ID not found in localStorage');
-  }
+  const userId = localStorage.getItem('user');
+  const sessionId = localStorage.getItem('session_id');
 
   const response = await fetch(
     `https://agentic.aiweaver.ai/api/rpt2/dimensions?user_id=${userId}&session_id=${sessionId}`
@@ -22,136 +19,9 @@ const fetchDimensions = async () => {
   return response.json();
 };
 
-// Modern Select Component for Dimension Filters
-const ModernSelect = ({ label, value, onChange, options, multiple = false, single = false, placeholder = "Select...", loading = false }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const filteredOptions = options?.filter(option =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
-
-  const handleSelect = (optionValue) => {
-    if (single) {
-      onChange(optionValue);
-      setIsOpen(false);
-    } else if (multiple) {
-      const newValue = Array.isArray(value) ? value : [];
-      if (newValue.includes(optionValue)) {
-        onChange(newValue.filter(v => v !== optionValue));
-      } else {
-        onChange([...newValue, optionValue]);
-      }
-    }
-  };
-
-  const handleSelectAll = () => {
-    if (multiple && options) {
-      onChange(options.map(opt => opt.code));
-    }
-  };
-
-  const handleClearAll = () => {
-    if (multiple) {
-      onChange([]);
-    }
-  };
-
-  const getDisplayValue = () => {
-    if (loading) return "Loading...";
-    
-    if (single) {
-      const selected = options?.find(opt => opt.code === value);
-      return selected ? selected.label : placeholder;
-    } else if (multiple) {
-      const selectedCount = Array.isArray(value) ? value.length : 0;
-      if (selectedCount === 0) return placeholder;
-      if (selectedCount === 1) return options?.find(opt => opt.code === value[0])?.label || placeholder;
-      return `${selectedCount} selected`;
-    }
-    return placeholder;
-  };
-
-  return (
-    <div className="relative">
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => !loading && setIsOpen(!isOpen)}
-          disabled={loading}
-          className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span className="block truncate flex items-center">
-            {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-            {getDisplayValue()}
-          </span>
-          <ChevronDown className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
-
-        {isOpen && !loading && (
-          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-            {(multiple || (options && options.length > 5)) && (
-              <div className="p-2 border-b border-gray-200">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            )}
-            
-            {multiple && (
-              <div className="p-2 border-b border-gray-200 flex space-x-2">
-                <button
-                  onClick={handleSelectAll}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Select All
-                </button>
-                <button
-                  onClick={handleClearAll}
-                  className="text-sm text-red-600 hover:text-red-800 font-medium"
-                >
-                  Clear All
-                </button>
-              </div>
-            )}
-
-            <div className="py-1">
-              {filteredOptions.map((option) => (
-                <button
-                  key={option.code}
-                  onClick={() => handleSelect(option.code)}
-                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center justify-between ${
-                    (single && value === option.code) || (multiple && Array.isArray(value) && value.includes(option.code))
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-900'
-                  }`}
-                >
-                  <span>{option.label}</span>
-                  {multiple && Array.isArray(value) && value.includes(option.code) && (
-                    <span className="text-blue-600">✓</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
 // Individual Dimension Field Filter
 const DimensionFieldFilter = ({ field, filter, onFilterChange, options, loading }) => {
   const filterTypes = [
-    { value: 'all', label: 'All' },
-    { value: 'single', label: 'Single' },
     { value: 'multiple', label: 'Multiple' },
     { value: 'contains', label: 'Contains' },
     { value: 'range', label: 'Range' }
@@ -168,24 +38,32 @@ const DimensionFieldFilter = ({ field, filter, onFilterChange, options, loading 
     });
   };
 
+  // Check if range should be disabled for node field
+  const isRangeDisabled = field === 'node';
+
   return (
     <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-      <div className="flex items-center space-x-4 mb-3">
-        <h4 className="text-sm font-medium text-gray-700 capitalize w-20">{field}:</h4>
-        <div className="flex space-x-2 flex-wrap">
-          {filterTypes.map(type => (
-            <button
-              key={type.value}
-              onClick={() => handleTypeChange(type.value)}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 ${
-                filter.type === type.value
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              {type.label}
-            </button>
-          ))}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-4">
+          <h4 className="text-sm font-medium text-gray-700 capitalize w-20">{field}:</h4>
+          <div className="flex space-x-2 flex-wrap">
+            {filterTypes.map(type => (
+              <button
+                key={type.value}
+                onClick={() => !isRangeDisabled || type.value !== 'range' ? handleTypeChange(type.value) : null}
+                disabled={isRangeDisabled && type.value === 'range'}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 ${
+                  filter.type === type.value
+                    ? 'bg-blue-600 text-white'
+                    : isRangeDisabled && type.value === 'range'
+                    ? 'bg-gray-200 text-gray-400 border border-gray-200 cursor-not-allowed'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {type.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -200,31 +78,44 @@ const DimensionFieldFilter = ({ field, filter, onFilterChange, options, loading 
       )}
 
       {filter.type === 'range' && (
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            placeholder="From..."
-            value={filter.rangeFrom}
-            onChange={(e) => onFilterChange({ ...filter, rangeFrom: e.target.value })}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="text"
-            placeholder="To..."
-            value={filter.rangeTo}
-            onChange={(e) => onFilterChange({ ...filter, rangeTo: e.target.value })}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+        <div className="flex space-x-1.5">
+          <div className="flex-1">
+            <ModernSelect
+              value={filter.rangeFrom || ''}
+              onChange={(value) => onFilterChange({ ...filter, rangeFrom: value })}
+              options={options}
+              single={true}
+              placeholder="From..."
+              loading={loading}
+            />
+          </div>
+          <span className="text-gray-400 self-center text-sm">-</span>
+          <div className="flex-1">
+            <ModernSelect
+              value={filter.rangeTo || ''}
+              onChange={(value) => onFilterChange({ ...filter, rangeTo: value })}
+              options={options}
+              single={true}
+              placeholder="To..."
+              loading={loading}
+            />
+          </div>
         </div>
       )}
 
       {(filter.type === 'single' || filter.type === 'multiple') && (
         <ModernSelect
-          value={filter.values}
-          onChange={(values) => onFilterChange({ ...filter, values: Array.isArray(values) ? values : [values] })}
+          value={filter.type === 'single' ? (filter.values[0] || '') : (filter.values || [])}
+          onChange={(value) => {
+            if (filter.type === 'single') {
+              onFilterChange({ ...filter, values: value ? [value] : [] });
+            } else {
+              onFilterChange({ ...filter, values: Array.isArray(value) ? value : [value] });
+            }
+          }}
           options={options}
-          multiple={filter.type === 'multiple'}
           single={filter.type === 'single'}
+          multiple={filter.type === 'multiple'}
           placeholder={`Select ${field}...`}
           loading={loading}
         />
@@ -234,8 +125,15 @@ const DimensionFieldFilter = ({ field, filter, onFilterChange, options, loading 
 };
 
 // Main Dimension Filter Component
-const DimensionFilter = ({ filters, onFiltersChange, setDimensionFiltersQuery }) => {
+const DimensionFilter = ({ 
+  filters, 
+  onFiltersChange, 
+  setDimensionFiltersExpQuery, 
+  setDimensionFiltersRevQuery 
+}) => {
   const dimensionFields = ['node', 'parent', 'dept', 'fund', 'account'];
+  const userId = localStorage.getItem('user');
+  const sessionId = localStorage.getItem('session_id');
   
   // Map field names to API response keys
   const fieldMapping = {
@@ -246,11 +144,14 @@ const DimensionFilter = ({ filters, onFiltersChange, setDimensionFiltersQuery })
     'account': 'account'
   };
 
+  // Define which fields are included in revenue and expense queries
+  const revFields = ['parent', 'fund', 'account']; // Revenue fields
+  const expFields = ['node', 'parent', 'dept', 'fund', 'account']; // Expense fields
+
   // Fetch dimensions data
   const { data: dimensionsData, isLoading, error } = useQuery({
     queryKey: ['dimensions'],
     queryFn: fetchDimensions,
-
   });
 
   const updateFilter = (field, filterData) => {
@@ -260,30 +161,83 @@ const DimensionFilter = ({ filters, onFiltersChange, setDimensionFiltersQuery })
     });
   };
 
+  const clearAllFilters = () => {
+    const clearedFilters = {};
+    dimensionFields.forEach(field => {
+      clearedFilters[field] = {
+        type: 'all',
+        values: [],
+        containsValue: '',
+        rangeFrom: '',
+        rangeTo: ''
+      };
+    });
+    onFiltersChange(clearedFilters);
+    setDimensionFiltersExpQuery('');
+    setDimensionFiltersRevQuery('');
+  };
+
+  const hasActiveFilters = () => {
+    return Object.values(filters).some(filter => 
+      filter && filter.type !== 'all' && (
+        (filter.values && filter.values.length > 0) ||
+        (filter.containsValue && filter.containsValue.trim() !== '') ||
+        (filter.rangeFrom && filter.rangeFrom.trim() !== '') ||
+        (filter.rangeTo && filter.rangeTo.trim() !== '')
+      )
+    );
+  };
+
   const getOptionsForField = (field) => {
     if (!dimensionsData?.dimensions) return [];
     const apiField = fieldMapping[field];
-    return dimensionsData.dimensions[apiField] || [];
+    const rawOptions = dimensionsData.dimensions[apiField] || [];
+    
+    // Transform the options to work with ModernSelect (expects 'code' and 'label' properties)
+    return rawOptions.map(option => ({
+      code: option.code,
+      label: option.code  // Show only code in dropdown
+    }));
   };
 
-  const generateDimensionCriteria = () => {
+  const generateDimensionCriteria = (fieldsToInclude) => {
     let criteria = '';
     Object.entries(filters).forEach(([field, filter]) => {
-      if (filter.type === 'all') return;
+      // Only include fields that are in the specified fieldsToInclude array
+      if (!fieldsToInclude.includes(field) || filter.type === 'all') return;
+      
+      // Use the mapped field names for SQL generation
+      const mappedField = fieldMapping[field];
       
       if (filter.type === 'single' && filter.values.length > 0) {
-        criteria += ` and a.${field} = '${filter.values[0]}'`;
+        criteria += ` and a.${mappedField} = '${filter.values[0]}'`;
       } else if (filter.type === 'multiple' && filter.values.length > 0) {
-        criteria += ` and a.${field} in (${filter.values.map(v => `'${v}'`).join(',')})`;
+        criteria += ` and a.${mappedField} in (${filter.values.map(v => `'${v}'`).join(',')})`;
       } else if (filter.type === 'contains' && filter.containsValue) {
-        criteria += ` and a.${field} like '%${filter.containsValue}%'`;
+        criteria += ` and a.${mappedField} like '%${filter.containsValue}%'`;
       } else if (filter.type === 'range' && filter.rangeFrom && filter.rangeTo) {
-        criteria += ` and a.${field} between '${filter.rangeFrom}' and '${filter.rangeTo}'`;
+        criteria += ` and a.${mappedField} between '${filter.rangeFrom}' and '${filter.rangeTo}'`;
       }
     });
-    setDimensionFiltersQuery(criteria);
     return criteria;
   };
+
+  const updateQueries = () => {
+    // Generate separate queries for revenue and expense
+    const revQuery = generateDimensionCriteria(revFields);
+    const expQuery = generateDimensionCriteria(expFields);
+    
+    setDimensionFiltersRevQuery(revQuery);
+    setDimensionFiltersExpQuery(expQuery);
+  };
+
+  // Update queries whenever filters change
+  useEffect(() => {
+    updateQueries();
+  }, [filters]);
+
+  // Check if user is admin
+  const isAdmin = userId === 'admin';
 
   if (error) {
     return (
@@ -307,12 +261,24 @@ const DimensionFilter = ({ filters, onFiltersChange, setDimensionFiltersQuery })
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-        {isLoading && <Loader2 className="w-5 h-5 animate-spin mr-2" />}
-        Dimension Filters
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+          {isLoading && <Loader2 className="w-5 h-5 animate-spin mr-2" />}
+          Filter by Dimensions 
+        </h3>
+        {hasActiveFilters() && (
+          <button
+            onClick={clearAllFilters}
+            className="flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors duration-200"
+          >
+            <X className="w-4 h-4" />
+            <span>Clear All</span>
+          </button>
+        )}
+      </div>
       
-      <div className="space-y-4 mb-6">
+      {/* 2-column grid layout for dimension fields */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {dimensionFields.map(field => (
           <DimensionFieldFilter
             key={field}
@@ -325,14 +291,23 @@ const DimensionFilter = ({ filters, onFiltersChange, setDimensionFiltersQuery })
         ))}
       </div>
 
-      {/* Preview of generated criteria */}
-      {userId === 'admin' && 
-      <div className="mt-6 p-4 rounded-lg border border-gray-200 bg-gray-50">
-        <h4 className="text-sm font-medium text-gray-700 mb-2">Generated Dimension Criteria:</h4>
-        <code className="text-sm text-gray-600 break-all">
-         {generateDimensionCriteria() || 'No filters applied'}
-        </code>
-      </div>}
+      {/* Preview of generated criteria - only show for admin users */}
+      {isAdmin && (
+        <div className="mt-3 space-y-2">
+          <div className="p-2 rounded-lg border border-green-200 bg-green-50">
+            <div className="text-xs font-medium text-green-700 mb-1">Revenue Query (Parent, Fund, Account):</div>
+            <code className="text-sm text-green-600 break-all">
+              {generateDimensionCriteria(revFields) || 'No revenue filters applied'}
+            </code>
+          </div>
+          <div className="p-2 rounded-lg border border-blue-200 bg-blue-50">
+            <div className="text-xs font-medium text-blue-700 mb-1">Expense Query (Node, Parent, Dept, Fund, Account):</div>
+            <code className="text-sm text-blue-600 break-all">
+              {generateDimensionCriteria(expFields) || 'No expense filters applied'}
+            </code>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

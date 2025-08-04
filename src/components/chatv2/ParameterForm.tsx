@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, X } from 'lucide-react';
-import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
+import MultiSelectDropdown from '../ui/MultiSelectDropdown';
+import CompactYearCarousel from '../ui/ModernYearSlider';
 
 export interface ParameterFormData {
   reportSelection: string;
@@ -20,177 +20,175 @@ const API_BASE_URL = 'https://agentic.aiweaver.ai/api';
 export const ParameterForm: React.FC<ParameterFormProps> = ({
   sessionId,
   onParametersSubmit,
-  disabled = false
+  disabled = false,
 }) => {
   const [formData, setFormData] = useState<ParameterFormData>({
     reportSelection: 'Current Version',
     budgetYear: '',
     fundCodes: [],
-    departments: []
+    departments: [],
   });
 
   const [availableData, setAvailableData] = useState({
     budgetYears: [] as string[],
-    fundCodes: [] as string[],
-    departments: [] as string[]
+    fundCodes: [] as [string, string][],
+    departments: [] as [string, string][],
   });
 
   const [loading, setLoading] = useState({
     budgetYears: false,
     fundCodes: false,
-    departments: false
+    departments: false,
   });
 
-  // API helper functions
-  const fetchBudgetYears = async (): Promise<string[]> => {
-    const response = await fetch(`${API_BASE_URL}/budget-years`);
-    if (!response.ok) throw new Error('Failed to fetch budget years');
-    const data = await response.json();
-    return data.budget_years;
-  };
-
-  const validateBudgetYear = async (year: string): Promise<boolean> => {
-    const response = await fetch(`${API_BASE_URL}/validate-budget-year?year=${encodeURIComponent(year)}`);
-    if (!response.ok) throw new Error('Failed to validate budget year');
-    const result = await response.json();
-    return result.valid;
-  };
-
-  const fetchFundCodes = async (year: string): Promise<string[]> => {
-    const response = await fetch(`${API_BASE_URL}/fund-codes?year=${encodeURIComponent(year)}`);
-    if (!response.ok) throw new Error('Failed to fetch fund codes');
-    const data = await response.json();
-    return data.fund_codes;
-  };
-
-  const fetchDepartments = async (year: string, fundCodes: string[]): Promise<string[]> => {
-    // For multiple fund codes, we'll fetch departments for each and combine
-    const allDepartments = new Set<string>();
-    
-    for (const fundCode of fundCodes) {
-      try {
-        const response = await fetch(`${API_BASE_URL}/departments?year=${encodeURIComponent(year)}&fund_code=${encodeURIComponent(fundCode)}`);
-        if (response.ok) {
-          const data = await response.json();
-          data.departments.forEach((dept: string) => allDepartments.add(dept));
-        }
-      } catch (error) {
-        console.error(`Error fetching departments for fund code ${fundCode}:`, error);
-      }
-    }
-    
-    return Array.from(allDepartments);
-  };
-
-  // Load budget years on component mount
+  // Fetch budget years on mount
   useEffect(() => {
     const loadBudgetYears = async () => {
       try {
-        setLoading(prev => ({ ...prev, budgetYears: true }));
-        const years = await fetchBudgetYears();
-        setAvailableData(prev => ({ ...prev, budgetYears: years }));
-      } catch (error) {
-        console.error('Error fetching budget years:', error);
+        setLoading((prev) => ({ ...prev, budgetYears: true }));
+        const res = await fetch(`${API_BASE_URL}/budget-years`);
+        const data = await res.json();
+        setAvailableData((prev) => ({ ...prev, budgetYears: data.budget_years }));
+      } catch (err) {
+        console.error('Error loading budget years:', err);
       } finally {
-        setLoading(prev => ({ ...prev, budgetYears: false }));
+        setLoading((prev) => ({ ...prev, budgetYears: false }));
       }
     };
 
     loadBudgetYears();
   }, []);
 
+  const validateBudgetYear = async (year: string): Promise<boolean> => {
+    const res = await fetch(`${API_BASE_URL}/validate-budget-year?year=${encodeURIComponent(year)}`);
+    const data = await res.json();
+    return data.valid;
+  };
+
+  const fetchFundCodes = async (year: string): Promise<[string, string][]> => {
+    const res = await fetch(`${API_BASE_URL}/fund-codes?year=${encodeURIComponent(year)}`);
+    const data = await res.json();
+    return data.fund_codes;
+  };
+
+  const fetchDepartments = async (
+    year: string,
+    fundCodes: string[]
+  ): Promise<[string, string][]> => {
+    const deptMap = new Map<string, string>();
+
+    for (const fundCode of fundCodes) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/departments?year=${encodeURIComponent(year)}&fund_code=${encodeURIComponent(fundCode)}`);
+        if (res.ok) {
+          const data = await res.json();
+          for (const [value, label] of data.departments) {
+            deptMap.set(value, label);
+          }
+        }
+      } catch (err) {
+        console.error(`Failed to load departments for fundCode ${fundCode}:`, err);
+      }
+    }
+
+    return Array.from(deptMap.entries()) as [string, string][];
+  };
+
   const handleBudgetYearChange = async (year: string) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      budgetYear: year, 
-      fundCodes: [], 
-      departments: [] 
+    setFormData((prev) => ({
+      ...prev,
+      budgetYear: year,
+      fundCodes: [],
+      departments: [],
     }));
-    setAvailableData(prev => ({ 
-      ...prev, 
-      fundCodes: [], 
-      departments: [] 
+    setAvailableData((prev) => ({
+      ...prev,
+      fundCodes: [],
+      departments: [],
     }));
-    
+
     if (year) {
       try {
-        setLoading(prev => ({ ...prev, fundCodes: true }));
-        const isValid = await validateBudgetYear(year);
-        if (isValid) {
+        setLoading((prev) => ({ ...prev, fundCodes: true }));
+        const valid = await validateBudgetYear(year);
+        if (valid) {
           const fundCodes = await fetchFundCodes(year);
-          setAvailableData(prev => ({ ...prev, fundCodes }));
+          setAvailableData((prev) => ({ ...prev, fundCodes }));
         }
-      } catch (error) {
-        console.error('Error loading fund codes:', error);
+      } catch (err) {
+        console.error('Error loading fund codes:', err);
       } finally {
-        setLoading(prev => ({ ...prev, fundCodes: false }));
+        setLoading((prev) => ({ ...prev, fundCodes: false }));
       }
     }
   };
 
-  const handleFundCodeChange = async (fundCode: string, isSelected: boolean) => {
-    let newFundCodes: string[];
-    
-    if (fundCode === 'ALL') {
-      // Handle "Select All" option
-      newFundCodes = isSelected ? [...availableData.fundCodes] : [];
+  const handleFundCodeChange = async (code: string, isSelected: boolean) => {
+    let updatedCodes: string[] = [];
+
+    if (code === 'ALL') {
+      updatedCodes = isSelected ? availableData.fundCodes.map(([val]) => val) : [];
     } else {
-      // Handle individual fund code selection
-      newFundCodes = isSelected
-        ? [...formData.fundCodes, fundCode]
-        : formData.fundCodes.filter(code => code !== fundCode);
+      updatedCodes = isSelected
+        ? [...formData.fundCodes, code]
+        : formData.fundCodes.filter((c) => c !== code);
     }
-    
-    setFormData(prev => ({ 
-      ...prev, 
-      fundCodes: newFundCodes, 
-      departments: [] 
+
+    setFormData((prev) => ({
+      ...prev,
+      fundCodes: updatedCodes,
+      departments: [],
     }));
-    setAvailableData(prev => ({ ...prev, departments: [] }));
-    
-    if (newFundCodes.length > 0 && formData.budgetYear) {
+    setAvailableData((prev) => ({ ...prev, departments: [] }));
+
+    if (updatedCodes.length > 0 && formData.budgetYear) {
       try {
-        setLoading(prev => ({ ...prev, departments: true }));
-        const departments = await fetchDepartments(formData.budgetYear, newFundCodes);
-        setAvailableData(prev => ({ ...prev, departments }));
-      } catch (error) {
-        console.error('Error loading departments:', error);
+        setLoading((prev) => ({ ...prev, departments: true }));
+        const departments = await fetchDepartments(formData.budgetYear, updatedCodes);
+        setAvailableData((prev) => ({ ...prev, departments }));
+      } catch (err) {
+        console.error('Error loading departments:', err);
       } finally {
-        setLoading(prev => ({ ...prev, departments: false }));
+        setLoading((prev) => ({ ...prev, departments: false }));
       }
     }
   };
 
-  const handleDepartmentChange = (department: string, isSelected: boolean) => {
-    let newDepartments: string[];
-    
-    if (department === 'ALL') {
-      // Handle "Select All" option
-      newDepartments = isSelected ? [...availableData.departments] : [];
+  const handleDepartmentChange = (dept: string, isSelected: boolean) => {
+    let updated: string[] = [];
+
+    if (dept === 'ALL') {
+      updated = isSelected ? availableData.departments.map(([val]) => val) : [];
     } else {
-      // Handle individual department selection
-      newDepartments = isSelected
-        ? [...formData.departments, department]
-        : formData.departments.filter(dept => dept !== department);
+      updated = isSelected
+        ? [...formData.departments, dept]
+        : formData.departments.filter((d) => d !== dept);
     }
-    
-    setFormData(prev => ({ ...prev, departments: newDepartments }));
+
+    setFormData((prev) => ({ ...prev, departments: updated }));
   };
 
-  const isFormValid = formData.budgetYear && formData.fundCodes.length > 0 && formData.departments.length > 0;
+  const isFormValid =
+    formData.budgetYear &&
+    formData.fundCodes.length > 0 &&
+    formData.departments.length > 0;
 
   return (
     <div className="border-b p-3">
       <div className="max-w-5xl mx-auto">
-        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Report Selection */}
           <div>
             <select
               value={formData.reportSelection}
-              onChange={(e) => setFormData(prev => ({ ...prev, reportSelection: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  reportSelection: e.target.value,
+                }))
+              }
               className="w-full p-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled={disabled}
+              disabled={true}
             >
               <option value="Current Version">Current Version</option>
               <option value="New Version Reports">New Version Reports</option>
@@ -198,48 +196,41 @@ export const ParameterForm: React.FC<ParameterFormProps> = ({
           </div>
 
           {/* Budget Year */}
-          <div>
-            <select
-              value={formData.budgetYear}
-              onChange={(e) => handleBudgetYearChange(e.target.value)}
-              className="w-full p-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled={disabled || loading.budgetYears}
-            >
-              <option value="">
-                {loading.budgetYears ? 'Loading years...' : 'Select Year'}
-              </option>
-              {availableData.budgetYears.map(year => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </select>
-          </div>
+          <CompactYearCarousel
+            onChange={handleBudgetYearChange}
+            value={formData.budgetYear}
+            disabled={disabled || loading.budgetYears}
+            years={availableData.budgetYears}
+          />
 
           {/* Fund Codes */}
           <MultiSelectDropdown
             label="Fund Codes"
             value={formData.fundCodes}
-            options={['ALL', ...availableData.fundCodes]}
+            options={availableData.fundCodes}
             loading={loading.fundCodes}
-            disabled={disabled || !formData.budgetYear || loading.fundCodes}
-            placeholder={!formData.budgetYear ? 'Select year first' : 'Select Fund Codes'}
+            disabled={disabled || !formData.budgetYear}
+            placeholder={
+              !formData.budgetYear ? 'Select year first' : 'Select Fund Codes'
+            }
             onChange={handleFundCodeChange}
-            color="blue"
             showSelectAll={true}
-            selectAllValue="ALL"
           />
 
           {/* Departments */}
           <MultiSelectDropdown
-            label="Dept"
+            label="Departments"
             value={formData.departments}
-            options={['ALL', ...availableData.departments]}
+            options={availableData.departments}
             loading={loading.departments}
-            disabled={disabled || formData.fundCodes.length === 0 || loading.departments}
-            placeholder={formData.fundCodes.length === 0 ? 'Select fund codes first' : 'Select Departments'}
+            disabled={formData.fundCodes.length === 0 || loading.departments}
+            placeholder={
+              formData.fundCodes.length === 0
+                ? 'Select fund codes first'
+                : 'Select Departments'
+            }
             onChange={handleDepartmentChange}
-            color="green"
             showSelectAll={true}
-            selectAllValue="ALL"
           />
         </div>
 

@@ -1,92 +1,118 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef, useImperativeHandle } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
 import DimensionFilter from './DimensionFilter';
 import MeasureFilter from './MeasureFilter';
 
-const AdvanceFilter = ({ onFiltersApplied }) => {
+const AdvanceFilter = forwardRef(({ onFiltersApplied }, ref) => {
   const [dimensionFilters, setDimensionFilters] = useState({});
   const [measureFilters, setMeasureFilters] = useState({});
-  const [isFullReport, setIsFullReport] = useState(true);
-   const [dimensionFiltersQuery, setDimensionFiltersQuery] = useState();
-  const [measureFiltersQuery, setMeasureFiltersQuery] = useState();
+  const [isExpanded, setIsExpanded] = useState(true);
+  
+  // Separate states for revenue and expense queries for dimensions
+  const [dimensionFiltersExpQuery, setDimensionFiltersExpQuery] = useState();
+  const [dimensionFiltersRevQuery, setDimensionFiltersRevQuery] = useState();
+  
+  // Separate states for revenue and expense queries for measures
+  const [measureFiltersExpQuery, setMeasureFiltersExpQuery] = useState();
+  const [measureFiltersRevQuery, setMeasureFiltersRevQuery] = useState();
   
   const handleSubmit = () => {
     const filterData = {
-      isFullReport,
+      isFullReport: !isExpanded,
       dimensionFilters,
       measureFilters,
       timestamp: new Date().toISOString()
     };
     
     console.log('Filter Data:', filterData);
-    console.log('Is Full Report:', isFullReport);
+    console.log('Is Full Report:', !isExpanded);
     console.log('Dimension Filters:', dimensionFilters);
     console.log('Measure Filters:', measureFilters);
-    console.log('Dimension Filters Query:', dimensionFiltersQuery);
-    console.log('Measure Filters Query:', measureFiltersQuery);
-    if (onFiltersApplied) {
-      onFiltersApplied(dimensionFiltersQuery, measureFiltersQuery);
-    }
+    console.log('Dimension Filters Exp Query:', dimensionFiltersExpQuery);
+    console.log('Dimension Filters Rev Query:', dimensionFiltersRevQuery);
+    console.log('Measure Filters Exp Query:', measureFiltersExpQuery);
+    console.log('Measure Filters Rev Query:', measureFiltersRevQuery);
+    
+    // if (onFiltersApplied) {
+    //   onFiltersApplied(
+    //     dimensionFiltersExpQuery, 
+    //     measureFiltersExpQuery,
+    //     dimensionFiltersRevQuery,
+    //     measureFiltersRevQuery
+    //   );
+    //   console.log('Filters applied successfully with queries:', {
+    //     dimensionFiltersExpQuery,
+    //     dimensionFiltersRevQuery,
+    //     measureFiltersExpQuery,
+    //     measureFiltersRevQuery
+    //   });
+    // }
+  };
+
+  // Expose handleSubmit method to parent component
+  useImperativeHandle(ref, () => ({
+    handleSubmit
+  }));
+
+  const toggleExpanded = () => {
+    setIsExpanded(!isExpanded);
   };
 
   return (
-    <div className={`${!isFullReport ? 'min-h-screen' : ' bg-gray-50 py-8'}`}>
+    <div className="bg-gray-50 py-8">
       <div className="px-4">
         <div className="space-y-8">
-          {/* Full Report Checkbox */}
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                id="fullReport"
-                checked={isFullReport}
-                onChange={(e) => setIsFullReport(e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 focus:ring-2"
-              />
-              <label 
-                htmlFor="fullReport" 
-                className="text-sm font-medium w-full cursor-pointer"
-              >
-                Full Report
-              </label>
-            </div>
+          {/* Expandable Advance Analysis Button */}
+          <div className="relative">
+            <button
+              className="w-full p-6 flex flex-col items-start text-left bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-white/30 rounded-lg shadow-lg hover:from-blue-500/30 hover:to-purple-500/30 hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+            >
+              <div className="w-full flex items-center justify-between">
+                <span className="text-sm font-semibold text-gray-800">Advanced Analysis</span>
+                <div className={`transition-transform duration-300 ${!isExpanded ? 'rotate-180' : 'rotate-0'}`}>
+                  <ChevronDown className="w-5 h-5 text-gray-700" />
+                </div>
+              </div>
+              
+              <div className="flex items-center mt-2">
+                <input 
+                  type="checkbox" 
+                  checked={isExpanded} 
+                  onChange={toggleExpanded} 
+                  className="mr-2" 
+                />
+                <label className="text-xs text-gray-500">Full Report</label>
+              </div>
+            </button>
           </div>
 
-          {/* Filter Sections - Hidden when Full Report is selected */}
-          {!isFullReport && (
-            <div className="space-y-4">
-              <DimensionFilter
-                filters={dimensionFilters}
-                onFiltersChange={setDimensionFilters}
-                dimensionFiltersQuery={dimensionFiltersQuery}
-                setDimensionFiltersQuery={setDimensionFiltersQuery}
-              />
-             
-              <MeasureFilter
-                filters={measureFilters}
-                onFiltersChange={setMeasureFilters}
-                measureFiltersQuery={measureFiltersQuery}
-                setMeasureFiltersQuery={setMeasureFiltersQuery}
-              />
-            </div>
-          )}
-
-          {/* Submit Button */}
-         {!isFullReport && <div className="bg-white  rounded-lg shadow-sm">
-            <div className="flex justify-start">
-              <button
-                onClick={handleSubmit}
-                className="px-2 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center space-x-2"
-              >
-                <Search className="w-3 h-3" />
-                <span>Apply Filters</span>
-              </button>
-            </div>
-          </div>}
+          {/* Filter Sections - Shown when expanded */}
+          <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
+            !isExpanded 
+              ? 'max-h-[2000px] opacity-100 transform translate-y-0' 
+              : 'max-h-0 opacity-0 transform -translate-y-4'
+          }`}>
+            {!isExpanded && (
+              <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
+                <DimensionFilter
+                  filters={dimensionFilters}
+                  onFiltersChange={setDimensionFilters}
+                  setDimensionFiltersExpQuery={setDimensionFiltersExpQuery}
+                  setDimensionFiltersRevQuery={setDimensionFiltersRevQuery}
+                />
+               
+               <MeasureFilter
+                  filters={measureFilters}
+                  onFiltersChange={setMeasureFilters}
+                  setMeasureFiltersQuery={setMeasureFiltersRevQuery}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
-};
+});
 
 export default AdvanceFilter;

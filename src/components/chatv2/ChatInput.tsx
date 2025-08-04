@@ -13,7 +13,7 @@ export const ChatInput = forwardRef<HTMLInputElement, {
   const inputRef = ref || internalRef;
 
   const handleSubmit = () => {
-    if (message.trim() && !disabled) {
+    if (!disabled) {
       onSendMessage(message.trim());
       setMessage('');
       // Refocus the input after sending message
@@ -47,14 +47,14 @@ export const ChatInput = forwardRef<HTMLInputElement, {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyPress={handleKeyPress}
-        disabled={disabled}
+        disabled={true}
         autoFocus
         className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-100"
         placeholder={placeholder}
       />
       <button
         onClick={handleSubmit}
-        disabled={disabled || !message.trim()}
+        disabled={disabled}
         className="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
       >
         <Send className="w-5 h-5" />
