@@ -56,59 +56,79 @@ const MeasureFilter = ({
     enabled: !!(userId && sessionId),
   });
 
-  // Define measure mappings for revenue and expense - using actual API field names
+  // Define specific measure mappings for revenue and expense based on actual API response
   const measureMappings = useMemo(() => {
     if (!measureStats?.measures) return { revenue: {}, expense: {} };
     
     console.log('Raw measureStats.measures:', measureStats.measures);
     
+    // Define specific field mappings based on actual API field names and display names
+    const revenueFields = {
+      'budget_amt': true,           // Budget (used in both)
+      'rev_amt': true,              // Actuals(rev)
+      'rev_variance': true,         // Remaining Rev
+      'pct_received': true          // %Received
+    };
+    
+    const expenseFields = {
+      'budget_amt': true,           // Budget (used in both)
+      'pre_encumbered_amt': true,   // Pre-Encumbrance
+      'encumbered_amt': true,       // Encumbrance
+      'expenses': true,             // Actuals(exp)
+      'exp_variance': true,         // Remaining Budget
+      'pct_budget_spent': true      // %Spent
+    };
+    
     // Create mappings based on actual API response
     const revenue = {};
     const expense = {};
     
-    // For now, let's include ALL measures in expense to ensure they get processed
-    // You can refine this logic later based on your specific business rules
     Object.entries(measureStats.measures).forEach(([apiKey, measureData]) => {
-      const displayName = measureData.display_name?.toLowerCase() || '';
-      const apiKeyLower = apiKey.toLowerCase();
+      const displayName = measureData.display_name;
       
       console.log(`Processing field: ${apiKey}, displayName: ${displayName}`);
       
-      // Categorize based on display name or API key patterns
-      if (displayName.includes('revenue') || 
-          displayName.includes('received') || 
-          displayName.includes('income') ||
-          apiKeyLower.includes('revenue') ||
-          apiKeyLower.includes('income')) {
-        revenue[apiKey] = measureData.display_name;
-        console.log(`Added ${apiKey} to revenue`);
-      } 
+      // Check if this field is in revenue fields
+      if (revenueFields[apiKey]) {
+        revenue[apiKey] = displayName;
+        console.log(`Added ${apiKey} (${displayName}) to revenue`);
+      }
       
-      // Add ALL fields to expense (they can be in both)
-      expense[apiKey] = measureData.display_name;
-      console.log(`Added ${apiKey} to expense`);
+      // Check if this field is in expense fields
+      if (expenseFields[apiKey]) {
+        expense[apiKey] = displayName;
+        console.log(`Added ${apiKey} (${displayName}) to expense`);
+      }
     });
     
     console.log('Final mappings:', { revenue, expense });
     return { revenue, expense };
   }, [measureStats]);
 
-  // Dynamically create measure fields from API response
+  // Dynamically create measure fields from API response, filtered by our specific mappings
   const measureFields = useMemo(() => {
     if (!measureStats?.measures) return [];
     
-    return Object.entries(measureStats.measures).map(([apiKey, measureData]) => ({
-      key: apiKey, // Use the API key as the filter key
-      label: measureData.display_name,
-      apiKey: apiKey,
-      stats: {
-        min: measureData.min,
-        max: measureData.max,
-        avg: measureData.avg,
-        sum: measureData.sum
-      }
-    }));
-  }, [measureStats]);
+    // Only include fields that are in either revenue or expense mappings
+    const allMappedFields = new Set([
+      ...Object.keys(measureMappings.revenue),
+      ...Object.keys(measureMappings.expense)
+    ]);
+    
+    return Object.entries(measureStats.measures)
+      .filter(([apiKey]) => allMappedFields.has(apiKey))
+      .map(([apiKey, measureData]) => ({
+        key: apiKey,
+        label: measureData.display_name,
+        apiKey: apiKey,
+        stats: {
+          min: measureData.min,
+          max: measureData.max,
+          avg: measureData.avg,
+          sum: measureData.sum
+        }
+      }));
+  }, [measureStats, measureMappings]);
 
   const operators = [
     { value: '=', label: 'Equals (=)' },
@@ -137,7 +157,7 @@ const MeasureFilter = ({
   // Toggle field expansion
   const toggleFieldExpansion = (fieldKey) => {
     setExpandedFields(prev => ({
-    
+     
       [fieldKey]: !prev[fieldKey]
     }));
   };
@@ -163,7 +183,7 @@ const MeasureFilter = ({
     let criteria = '';
     Object.entries(filtersToUse).forEach(([field, filter]) => {
       if (filter.operator && (filter.value !== undefined || filter.range)) {
-        // Check if this field is applicable to revenue using the dynamic mapping
+        // Check if this field is applicable to revenue using the specific mapping
         if (measureMappings.revenue[field]) {
           if (criteria) criteria += ' and ';
           
@@ -182,13 +202,12 @@ const MeasureFilter = ({
     return result;
   };
 
-  // Generate measures criteria for expense - FIXED VERSION
+  // Generate measures criteria for expense
   const generateExpenseMeasuresCriteria = (filtersToUse = filters) => {
     let criteria = '';
     console.log('=== EXPENSE CRITERIA GENERATION ===');
     console.log('Filters to use:', filtersToUse);
     console.log('Expense mappings:', measureMappings.expense);
-    console.log('Object.entries(filtersToUse):', Object.entries(filtersToUse));
 
     Object.entries(filtersToUse).forEach(([field, filter]) => {
       console.log(`Processing field: ${field}`, filter);
@@ -204,7 +223,7 @@ const MeasureFilter = ({
         return;
       }
       
-      // Check if this field is applicable to expense using the dynamic mapping
+      // Check if this field is applicable to expense using the specific mapping
       if (!measureMappings.expense[field]) {
         console.log(`Skipping ${field} - not in expense mappings`);
         return;
@@ -274,7 +293,7 @@ const MeasureFilter = ({
   if (!measureFields.length) {
     return (
       <div className="p-6 bg-white rounded-lg shadow-lg">
-        <div className="text-gray-600">No measure data available</div>
+        <div className="text-gray-600">No relevant measure data available for the specified fields</div>
       </div>
     );
   }
@@ -283,13 +302,10 @@ const MeasureFilter = ({
     <div className="p-4 min-h-[200px] bg-white rounded-lg shadow-lg">
       {/* Header with collapse toggle */}
       <div className="flex items-center justify-between mb-4">
-        <div 
-          className="flex items-center cursor-pointer"
-        >
+        <div className="flex items-center cursor-pointer">
           <h3 className="text-lg font-semibold text-gray-800 mr-2">
             Filter by Measures 
           </h3>
-          
         </div>
         
         {/* Clear All Button */}
@@ -318,8 +334,6 @@ const MeasureFilter = ({
             const isRevenueField = measureMappings.revenue[field.key];
             const isExpenseField = measureMappings.expense[field.key];
             
-          
-            
             return (
               <div key={field.key} className="bg-gray-50 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                 {/* Field header - always visible */}
@@ -328,9 +342,15 @@ const MeasureFilter = ({
                   onClick={() => toggleFieldExpansion(field.key)}
                 >
                   <div>
-                    <h4 className="text-base font-semibold text-gray-800">
-                      {field.label}
-                    </h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-base font-semibold text-gray-800">
+                        {field.label}
+                      </h4>
+                      {/* Show tags for which query this field affects */}
+                      <div className="flex gap-1">
+                       
+                      </div>
+                    </div>
                     
                     {/* Display selected filter value */}
                     {filterDisplay && (
@@ -428,7 +448,7 @@ const MeasureFilter = ({
 
         {/* Preview section - only show for admin users */}
         {isAdmin && (
-         <div className="mt-3 py-2 rounded-lg border border-gray-200 bg-gray-50">
+          <div className="mt-3 py-2 rounded-lg border border-gray-200 bg-gray-50">
             <div className="p-2 rounded-lg border border-green-200 bg-green-50">
               <div className="text-xs font-medium text-green-700 mb-1">Revenue Query:</div>
               <code className="text-sm text-green-600 break-all">

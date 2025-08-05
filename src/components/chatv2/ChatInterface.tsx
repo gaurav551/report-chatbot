@@ -349,7 +349,7 @@ const addFilterMessage = (
     // You'll need to map dimensionFiltersQuery and measureFiltersQuery to the appropriate filter fields
     const updatedFilters = {
       measures_requested_rev: null,
-      dimension_filter_rev: measureFiltersRevQuery || null,
+      dimension_filter_rev: dimensionFiltersRevQuery || null,
       measures_filter_rev: measureFiltersRevQuery,
       measures_requested_exp: null,
       dimension_filter_exp: dimensionFiltersExpQuery,
