@@ -172,13 +172,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName, ses
   return (
     <>
       <div className={`${message.type !== 'report' ? 'flex' : ''} ${message.isUser ? 'justify-end' : 'justify-start'} mb-4`}>
-        <div className={`px-4 py-2 rounded-2xl ${message.isUser ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm'}`}>
-          <div className="flex items-start space-x-2">
+        <div className={`px-2 py-2 rounded-2xl ${message.isUser ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm'}`}>
+          <div className="flex items-start">
             {!message.isUser && <Bot className="w-5 h-5 mt-0.5 text-blue-600 flex-shrink-0" />}
             
             <div className="flex-1">
               {message.type === 'report' && message.reportUrl ? (
-                <div className="space-y-2 relative">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="text-md">{message.text || 'Report generated successfully!'}</p>
                     <button
@@ -211,18 +211,17 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName, ses
                       <iframe src={message.reportUrl} className="w-full flex-1" title="Report" />
                     </div>
 
-                    {/* Floating fullscreen toggle button - only show when not in fullscreen */}
+                    {/* Minimal floating fullscreen toggle button - only show when not in fullscreen */}
                     {!isFullscreen && (
                       <button
                         onClick={toggleFullscreen}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 
-                                   bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900
-                                   shadow-lg hover:shadow-xl border border-gray-200
-                                   rounded-full p-3 transition-all duration-200 ease-in-out
-                                   hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                        className="absolute top-18 right-4 z-10 
+                                    bg-opacity-60 hover:bg-opacity-80 text-black
+                                   rounded-lg p-2 transition-all duration-200 ease-in-out
+                                   hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                         title="View fullscreen"
                       >
-                        <Maximize2 className="w-5 h-5" />
+                        <Maximize2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>

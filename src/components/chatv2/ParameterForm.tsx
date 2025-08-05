@@ -223,7 +223,7 @@ export const ParameterForm: React.FC<ParameterFormProps> = ({
             value={formData.departments}
             options={availableData.departments}
             loading={loading.departments}
-            disabled={formData.fundCodes.length === 0 || loading.departments}
+            disabled={disabled || !formData.departments}
             placeholder={
               formData.fundCodes.length === 0
                 ? 'Select fund codes first'
