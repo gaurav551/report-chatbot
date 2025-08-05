@@ -14,6 +14,7 @@ import { ParameterForm, ParameterFormData } from "./ParameterForm";
 import { detectReportOutput } from "../../utils/detectReport";
 import FilterComponent from "./Filters/DimensionFilter";
 import AdvanceFilter from "./Filters/AdvanceFilter";
+import { generateFilterMessage } from "../../utils/generateFIlterMessage";
 
 // New interface for the report generation API
 interface ReportGenerationRequest {
@@ -320,17 +321,21 @@ export const ChatInterface: React.FC<{
     }
   };
 
-  const addFilterMessage = (
+const addFilterMessage = (
     dimensionFiltersExpQuery: any,
     measureFilterExpQuery: any,
     dimensionFiltersRevQuery: any,
-    measureFiltersRevQuery: any
+    measureFiltersRevQuery: any,
+    dimensionFilters: any,
+    measureFilters: any
   ) => {
-    // Create a message with the filter data
-    const filterText = `Applied filters - Dimensions: ${JSON.stringify(
-      dimensionFiltersRevQuery
-    )}, Measures: ${JSON.stringify(measureFiltersRevQuery)}`;
 
+    
+    // Create a message with the filter data
+    const filterText = generateFilterMessage(dimensionFilters, measureFilters);
+    
+   
+    
     const newMessage: Message = {
       id: Date.now().toString(),
       text: filterText,
@@ -339,7 +344,7 @@ export const ChatInterface: React.FC<{
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, newMessage]);
-
+    
     // Update filter parameters based on the filters received
     // You'll need to map dimensionFiltersQuery and measureFiltersQuery to the appropriate filter fields
     const updatedFilters = {
@@ -350,9 +355,8 @@ export const ChatInterface: React.FC<{
       dimension_filter_exp: dimensionFiltersExpQuery,
       measures_filter_exp: measureFilterExpQuery || null,
     };
-
     setFilterParams(updatedFilters);
-
+    
     // If parameters have been submitted, regenerate the report with new filters
     if (reportParams && parametersSubmitted) {
       generateReport(reportParams, updatedFilters);
@@ -516,7 +520,7 @@ export const ChatInterface: React.FC<{
               <div ref={messagesEndRef} />
             </div>
           )}
-         {messages.length > 0 && messages.some((msg) => msg.type === "report") && (
+          {messages.length > 0 && messages.some((msg) => msg.type === "report") && (
   <AdvanceFilter
     ref={advanceFilterRef as any}
     key={messages.length}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import SingleSlider from '../../ui/SingleSlider';
@@ -37,7 +37,12 @@ const formatFilterValue = (filter) => {
 };
 
 // Main Measure Filter Component
-const MeasureFilter = ({ filters, onFiltersChange, setMeasureFiltersQuery }) => {
+const MeasureFilter = ({ 
+  filters, 
+  onFiltersChange, 
+  setMeasureFiltersExpQuery, 
+  setMeasureFiltersRevQuery 
+}) => {
   const [expandedFields, setExpandedFields] = useState({});
 
   // Get userId and sessionId from memory (localStorage replacement)
@@ -50,6 +55,43 @@ const MeasureFilter = ({ filters, onFiltersChange, setMeasureFiltersQuery }) => 
     queryFn: () => fetchMeasureStats(userId, sessionId),
     enabled: !!(userId && sessionId),
   });
+
+  // Define measure mappings for revenue and expense - using actual API field names
+  const measureMappings = useMemo(() => {
+    if (!measureStats?.measures) return { revenue: {}, expense: {} };
+    
+    console.log('Raw measureStats.measures:', measureStats.measures);
+    
+    // Create mappings based on actual API response
+    const revenue = {};
+    const expense = {};
+    
+    // For now, let's include ALL measures in expense to ensure they get processed
+    // You can refine this logic later based on your specific business rules
+    Object.entries(measureStats.measures).forEach(([apiKey, measureData]) => {
+      const displayName = measureData.display_name?.toLowerCase() || '';
+      const apiKeyLower = apiKey.toLowerCase();
+      
+      console.log(`Processing field: ${apiKey}, displayName: ${displayName}`);
+      
+      // Categorize based on display name or API key patterns
+      if (displayName.includes('revenue') || 
+          displayName.includes('received') || 
+          displayName.includes('income') ||
+          apiKeyLower.includes('revenue') ||
+          apiKeyLower.includes('income')) {
+        revenue[apiKey] = measureData.display_name;
+        console.log(`Added ${apiKey} to revenue`);
+      } 
+      
+      // Add ALL fields to expense (they can be in both)
+      expense[apiKey] = measureData.display_name;
+      console.log(`Added ${apiKey} to expense`);
+    });
+    
+    console.log('Final mappings:', { revenue, expense });
+    return { revenue, expense };
+  }, [measureStats]);
 
   // Dynamically create measure fields from API response
   const measureFields = useMemo(() => {
@@ -77,16 +119,25 @@ const MeasureFilter = ({ filters, onFiltersChange, setMeasureFiltersQuery }) => 
   ];
 
   const updateFilter = (field, filterData) => {
-    onFiltersChange({
+    const updatedFilters = {
       ...filters,
       [field]: filterData
-    });
+    };
+    onFiltersChange(updatedFilters);
+    
+    // Update queries immediately with the new filters
+    updateQueries(updatedFilters);
   };
+
+  // Update queries whenever filters change
+  useEffect(() => {
+    updateQueries(filters);
+  }, [filters]);
 
   // Toggle field expansion
   const toggleFieldExpansion = (fieldKey) => {
     setExpandedFields(prev => ({
-      ...prev,
+    
       [fieldKey]: !prev[fieldKey]
     }));
   };
@@ -94,8 +145,9 @@ const MeasureFilter = ({ filters, onFiltersChange, setMeasureFiltersQuery }) => 
   // Clear all filters function
   const clearAllFilters = () => {
     onFiltersChange({});
-    setMeasureFiltersQuery('');
-    setExpandedFields({})
+    setMeasureFiltersExpQuery('');
+    setMeasureFiltersRevQuery('');
+    setExpandedFields({});
   };
 
   // Check if any filters are active
@@ -106,27 +158,89 @@ const MeasureFilter = ({ filters, onFiltersChange, setMeasureFiltersQuery }) => 
     );
   };
 
-
-
-  const generateMeasuresCriteria = () => {
+  // Generate measures criteria for revenue
+  const generateRevenueMeasuresCriteria = (filtersToUse = filters) => {
     let criteria = '';
-    Object.entries(filters).forEach(([field, filter]) => {
+    Object.entries(filtersToUse).forEach(([field, filter]) => {
       if (filter.operator && (filter.value !== undefined || filter.range)) {
-        if (criteria) criteria += ' and ';
-        
-        if (filter.operator === '>' || filter.operator === '>=') {
-          if (filter.range) {
-            const [start, end] = filter.range;
-            criteria += `${field} ${filter.operator} ${Math.round(start)} and ${field} ${filter.operator === '>' ? '<' : '<='} ${Math.round(end)}`;
+        // Check if this field is applicable to revenue using the dynamic mapping
+        if (measureMappings.revenue[field]) {
+          if (criteria) criteria += ' and ';
+          
+          if (filter.operator === '>' || filter.operator === '>=') {
+            if (filter.range) {
+              const [start, end] = filter.range;
+              criteria += `${field} ${filter.operator} ${Math.round(start)} and ${field} ${filter.operator === '>' ? '<' : '<='} ${Math.round(end)}`;
+            }
+          } else if (filter.value !== undefined) {
+            criteria += `${field} ${filter.operator} ${Math.round(filter.value)}`;
           }
-        } else if (filter.value !== undefined) {
-          criteria += `${field} ${filter.operator} ${Math.round(filter.value)}`;
         }
       }
     });
     const result = criteria ? `where ${criteria}` : '';
-    setMeasureFiltersQuery(result);
-    return result || 'No filters applied';
+    return result;
+  };
+
+  // Generate measures criteria for expense - FIXED VERSION
+  const generateExpenseMeasuresCriteria = (filtersToUse = filters) => {
+    let criteria = '';
+    console.log('=== EXPENSE CRITERIA GENERATION ===');
+    console.log('Filters to use:', filtersToUse);
+    console.log('Expense mappings:', measureMappings.expense);
+    console.log('Object.entries(filtersToUse):', Object.entries(filtersToUse));
+
+    Object.entries(filtersToUse).forEach(([field, filter]) => {
+      console.log(`Processing field: ${field}`, filter);
+      
+      // Check if filter has required properties
+      if (!filter || !filter.operator) {
+        console.log(`Skipping ${field} - no operator`);
+        return;
+      }
+      
+      if (filter.value === undefined && (!filter.range || !Array.isArray(filter.range))) {
+        console.log(`Skipping ${field} - no value or range`);
+        return;
+      }
+      
+      // Check if this field is applicable to expense using the dynamic mapping
+      if (!measureMappings.expense[field]) {
+        console.log(`Skipping ${field} - not in expense mappings`);
+        return;
+      }
+      
+      console.log(`Processing ${field} for expense criteria`);
+      
+      if (criteria) criteria += ' and ';
+      
+      if (filter.operator === '>' || filter.operator === '>=') {
+        if (filter.range && Array.isArray(filter.range) && filter.range.length === 2) {
+          const [start, end] = filter.range;
+          criteria += `${field} ${filter.operator} ${Math.round(start)} and ${field} ${filter.operator === '>' ? '<' : '<='} ${Math.round(end)}`;
+          console.log(`Added range criteria for ${field}: ${criteria}`);
+        }
+      } else if (filter.value !== undefined) {
+        criteria += `${field} ${filter.operator} ${Math.round(filter.value)}`;
+        console.log(`Added value criteria for ${field}: ${field} ${filter.operator} ${Math.round(filter.value)}`);
+      }
+    });
+    
+    const result = criteria ? `where ${criteria}` : '';
+    console.log('Final expense criteria:', result);
+    console.log('=== END EXPENSE CRITERIA GENERATION ===');
+    return result;
+  };
+
+  // Generate both queries and set them
+  const updateQueries = (updatedFilters) => {
+    const revQuery = generateRevenueMeasuresCriteria(updatedFilters);
+    const expQuery = generateExpenseMeasuresCriteria(updatedFilters);
+    
+    setMeasureFiltersRevQuery(revQuery);
+    setMeasureFiltersExpQuery(expQuery);
+    
+    return { revQuery, expQuery };
   };
 
   // Check if user is admin
@@ -166,7 +280,7 @@ const MeasureFilter = ({ filters, onFiltersChange, setMeasureFiltersQuery }) => 
   }
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow-lg">
+    <div className="p-4 min-h-[200px] bg-white rounded-lg shadow-lg">
       {/* Header with collapse toggle */}
       <div className="flex items-center justify-between mb-4">
         <div 
@@ -199,6 +313,12 @@ const MeasureFilter = ({ filters, onFiltersChange, setMeasureFiltersQuery }) => 
             const isRangeOperator = currentFilter.operator === '>' || currentFilter.operator === '>=';
             const filterDisplay = formatFilterValue(currentFilter);
             const isExpanded = expandedFields[field.key];
+            
+            // Determine if this field applies to revenue, expense, or both
+            const isRevenueField = measureMappings.revenue[field.key];
+            const isExpenseField = measureMappings.expense[field.key];
+            
+          
             
             return (
               <div key={field.key} className="bg-gray-50 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
@@ -265,7 +385,9 @@ const MeasureFilter = ({ filters, onFiltersChange, setMeasureFiltersQuery }) => 
                               min={stats.min}
                               max={stats.max}
                               value={currentFilter.range || [stats.min, stats.max]}
-                              onChange={(newRange) => updateFilter(field.key, { ...currentFilter, range: newRange })}
+                              onChange={(newRange) => {
+                                updateFilter(field.key, { ...currentFilter, range: newRange });
+                              }}
                             />
                           </div>
                         ) : (
@@ -274,7 +396,9 @@ const MeasureFilter = ({ filters, onFiltersChange, setMeasureFiltersQuery }) => 
                               min={stats.min}
                               max={stats.max}
                               value={currentFilter.value || stats.avg}
-                              onChange={(newValue) => updateFilter(field.key, { ...currentFilter, value: newValue })}
+                              onChange={(newValue) => {
+                                updateFilter(field.key, { ...currentFilter, value: newValue });
+                              }}
                             />
                           </div>
                         )}
@@ -304,10 +428,19 @@ const MeasureFilter = ({ filters, onFiltersChange, setMeasureFiltersQuery }) => 
 
         {/* Preview section - only show for admin users */}
         {isAdmin && (
-          <div className="mt-3 p-2 rounded-lg border border-gray-200 bg-gray-50">
-            <code className="text-sm text-gray-600 break-all">
-              {generateMeasuresCriteria()}
-            </code>
+         <div className="mt-3 py-2 rounded-lg border border-gray-200 bg-gray-50">
+            <div className="p-2 rounded-lg border border-green-200 bg-green-50">
+              <div className="text-xs font-medium text-green-700 mb-1">Revenue Query:</div>
+              <code className="text-sm text-green-600 break-all">
+                {generateRevenueMeasuresCriteria(filters) || 'No revenue filters applied'}
+              </code>
+            </div>
+            <div className="p-2 rounded-lg border border-red-200 bg-red-50">
+              <div className="text-xs font-medium text-red-700 mb-1">Expense Query:</div>
+              <code className="text-sm text-red-600 break-all">
+                {generateExpenseMeasuresCriteria(filters) || 'No expense filters applied'}
+              </code>
+            </div>
           </div>
         )}
       </>

@@ -3,7 +3,7 @@ import { Search, ChevronDown } from 'lucide-react';
 import DimensionFilter from './DimensionFilter';
 import MeasureFilter from './MeasureFilter';
 
-const AdvanceFilter = forwardRef(({ onFiltersApplied }, ref) => {
+const AdvanceFilter = forwardRef(({ onFiltersApplied, isVisible = true }, ref) => {
   const [dimensionFilters, setDimensionFilters] = useState({});
   const [measureFilters, setMeasureFilters] = useState({});
   const [isExpanded, setIsExpanded] = useState(true);
@@ -33,20 +33,22 @@ const AdvanceFilter = forwardRef(({ onFiltersApplied }, ref) => {
     console.log('Measure Filters Exp Query:', measureFiltersExpQuery);
     console.log('Measure Filters Rev Query:', measureFiltersRevQuery);
     
-    // if (onFiltersApplied) {
-    //   onFiltersApplied(
-    //     dimensionFiltersExpQuery, 
-    //     measureFiltersExpQuery,
-    //     dimensionFiltersRevQuery,
-    //     measureFiltersRevQuery
-    //   );
-    //   console.log('Filters applied successfully with queries:', {
-    //     dimensionFiltersExpQuery,
-    //     dimensionFiltersRevQuery,
-    //     measureFiltersExpQuery,
-    //     measureFiltersRevQuery
-    //   });
-    // }
+    if (onFiltersApplied) {
+      onFiltersApplied(
+        dimensionFiltersExpQuery, 
+        measureFiltersExpQuery,
+        dimensionFiltersRevQuery,
+        measureFiltersRevQuery,
+        dimensionFilters,
+        measureFilters
+      );
+      console.log('Filters applied successfully with queries:', {
+        dimensionFiltersExpQuery,
+        dimensionFiltersRevQuery,
+        measureFiltersExpQuery,
+        measureFiltersRevQuery
+      });
+    }
   };
 
   // Expose handleSubmit method to parent component
@@ -59,7 +61,7 @@ const AdvanceFilter = forwardRef(({ onFiltersApplied }, ref) => {
   };
 
   return (
-    <div className="bg-gray-50 py-8">
+    <div className={`bg-gray-50 py-8 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
       <div className="px-4">
         <div className="space-y-8">
           {/* Expandable Advance Analysis Button */}
@@ -101,11 +103,7 @@ const AdvanceFilter = forwardRef(({ onFiltersApplied }, ref) => {
                   setDimensionFiltersRevQuery={setDimensionFiltersRevQuery}
                 />
                
-               <MeasureFilter
-                  filters={measureFilters}
-                  onFiltersChange={setMeasureFilters}
-                  setMeasureFiltersQuery={setMeasureFiltersRevQuery}
-                />
+               <MeasureFilter filters={measureFilters} onFiltersChange={setMeasureFilters} setMeasureFiltersExpQuery={setMeasureFiltersExpQuery} setMeasureFiltersRevQuery={setMeasureFiltersRevQuery} />
               </div>
             )}
           </div>

@@ -212,7 +212,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName, ses
                     </div>
 
                     {/* Floating fullscreen toggle button - only show when not in fullscreen */}
-                    {/* {!isFullscreen && (
+                    {!isFullscreen && (
                       <button
                         onClick={toggleFullscreen}
                         className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 
@@ -224,7 +224,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName, ses
                       >
                         <Maximize2 className="w-5 h-5" />
                       </button>
-                    )} */}
+                    )}
                   </div>
 
                   {!isFullscreen && renderDownloadButtons()}
