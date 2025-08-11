@@ -177,7 +177,7 @@ const RangeSlider = ({ min, max, value, onChange, disabled = false, label = "Ran
             <input
               ref={startInputRef}
               type="number"
-  value={Math.round(inputValues.start) || inputValues.start}
+  value={inputValues.start}
               onChange={(e) => setInputValues({ ...inputValues, start: e.target.value })}
               onBlur={() => handleInputSubmit('start')}
               onKeyDown={handleInputKeyDown('start')}
@@ -198,8 +198,8 @@ const RangeSlider = ({ min, max, value, onChange, disabled = false, label = "Ran
           {inputMode.end ? (
             <input
               ref={endInputRef}
-              type="text"
-  value={Math.round(inputValues.end) || inputValues.end}
+              type="number"
+  value={inputValues.end}
               onChange={(e) => setInputValues({ ...inputValues, end: e.target.value })}
               onBlur={() => handleInputSubmit('end')}
               onKeyDown={handleInputKeyDown('end')}

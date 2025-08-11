@@ -64,19 +64,19 @@ const MeasureFilter = ({
     
     // Define specific field mappings based on actual API field names and display names
     const revenueFields = {
-      'budget_amt': true,           // Budget (used in both)
-      'rev_amt': true,              // Actuals(rev)
-      'rev_variance': true,         // Remaining Rev
-      'pct_received': true          // %Received
+      'total_budget_amt_rev': true,     // Budget (Rev)
+      'total_rev_amt': true,            // Actuals(rev)
+      'remaining_budget': true,         // Remaining Rev
+      'pct_received': true              // %Received
     };
     
     const expenseFields = {
-      'budget_amt': true,           // Budget (used in both)
-      'pre_encumbered_amt': true,   // Pre-Encumbrance
-      'encumbered_amt': true,       // Encumbrance
-      'expenses': true,             // Actuals(exp)
-      'exp_variance': true,         // Remaining Budget
-      'pct_budget_spent': true      // %Spent
+      'total_budget_amt_exp': true,     // Budget (Exp)
+      'total_pre_encumbered_amt': true, // Pre-Encumbrance
+      'total_encumbered_amt': true,     // Encumbrance
+      'total_expenses': true,           // Actuals(exp)
+      'total_exp_variance': true,       // Remaining Budget
+      'pct_budget_spent': true          // %Spent
     };
     
     // Create mappings based on actual API response
@@ -187,13 +187,25 @@ const MeasureFilter = ({
         if (measureMappings.revenue[field]) {
           if (criteria) criteria += ' and ';
           
+          // Map API field names to query field names
+          let queryField = field;
+          if (field === 'total_budget_amt_rev') {
+            queryField = 'total_budget_amt';
+          } else if (field === 'total_rev_amt') {
+            queryField = 'total_rev_amt';
+          } else if (field === 'remaining_budget') {
+            queryField = 'remaining_budget';
+          } else if (field === 'pct_received') {
+            queryField = 'pct_received';
+          }
+          
           if (filter.operator === '>' || filter.operator === '>=') {
             if (filter.range) {
               const [start, end] = filter.range;
-              criteria += `${field} ${filter.operator} ${Math.round(start)} and ${field} ${filter.operator === '>' ? '<' : '<='} ${Math.round(end)}`;
+              criteria += `${queryField} ${filter.operator} ${(start)} and ${queryField} ${filter.operator === '>' ? '<' : '<='} ${(end)}`;
             }
           } else if (filter.value !== undefined) {
-            criteria += `${field} ${filter.operator} ${Math.round(filter.value)}`;
+            criteria += `${queryField} ${filter.operator} ${(filter.value)}`;
           }
         }
       }
@@ -233,15 +245,31 @@ const MeasureFilter = ({
       
       if (criteria) criteria += ' and ';
       
+      // Map API field names to query field names
+      let queryField = field;
+      if (field === 'total_budget_amt_exp') {
+        queryField = 'total_budget_amt';
+      } else if (field === 'total_pre_encumbered_amt') {
+        queryField = 'total_pre_encumbered_amt';
+      } else if (field === 'total_encumbered_amt') {
+        queryField = 'total_encumbered_amt';
+      } else if (field === 'total_expenses') {
+        queryField = 'total_expenses';
+      } else if (field === 'total_exp_variance') {
+        queryField = 'total_exp_variance';
+      } else if (field === 'pct_budget_spent') {
+        queryField = 'pct_budget_spent';
+      }
+      
       if (filter.operator === '>' || filter.operator === '>=') {
         if (filter.range && Array.isArray(filter.range) && filter.range.length === 2) {
           const [start, end] = filter.range;
-          criteria += `${field} ${filter.operator} ${Math.round(start)} and ${field} ${filter.operator === '>' ? '<' : '<='} ${Math.round(end)}`;
+          criteria += `${queryField} ${filter.operator} ${(start)} and ${queryField} ${filter.operator === '>' ? '<' : '<='} ${(end)}`;
           console.log(`Added range criteria for ${field}: ${criteria}`);
         }
       } else if (filter.value !== undefined) {
-        criteria += `${field} ${filter.operator} ${Math.round(filter.value)}`;
-        console.log(`Added value criteria for ${field}: ${field} ${filter.operator} ${Math.round(filter.value)}`);
+        criteria += `${queryField} ${filter.operator} ${(filter.value)}`;
+        console.log(`Added value criteria for ${field}: ${queryField} ${filter.operator} ${(filter.value)}`);
       }
     });
     
@@ -320,9 +348,9 @@ const MeasureFilter = ({
         )}
       </div>
       
-      {/* Collapsible content */}
+      {/* Collapsible content - Changed from grid to flex layout */}
       <>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="columns-1 lg:columns-2 gap-4 space-y-4">
           {measureFields.map(field => {
             const stats = field.stats;
             const currentFilter = filters[field.key] || {};
@@ -335,7 +363,10 @@ const MeasureFilter = ({
             const isExpenseField = measureMappings.expense[field.key];
             
             return (
-              <div key={field.key} className="bg-gray-50 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+              <div 
+                key={field.key} 
+                className="bg-gray-50 border border-gray-200 rounded-lg hover:shadow-md transition-shadow break-inside-avoid mb-4"
+              >
                 {/* Field header - always visible */}
                 <div 
                   className="p-4 cursor-pointer flex items-center justify-between"

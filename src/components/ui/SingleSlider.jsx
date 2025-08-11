@@ -150,8 +150,8 @@ const SingleSlider = ({ min, max, value, onChange, disabled = false, label = "Va
           {inputMode ? (
             <input
               ref={inputRef}
-              type="text"
-               value={Math.round(inputValue) || inputValue}
+              type="number"
+               value={inputValue}
 
               onChange={(e) => setInputValue(e.target.value)}
               onBlur={handleInputSubmit}

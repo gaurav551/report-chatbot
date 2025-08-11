@@ -7,7 +7,7 @@ import {
   ChatSession,
   Message,
 } from "../../interfaces/Message";
-import { Bot, RotateCcw, MessageCircle, Send } from "lucide-react";
+import { Bot, RotateCcw, MessageCircle, Send, BarChart3, FileText } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { ParameterForm, ParameterFormData } from "./ParameterForm";
@@ -15,6 +15,8 @@ import { detectReportOutput } from "../../utils/detectReport";
 import FilterComponent from "./Filters/DimensionFilter";
 import AdvanceFilter from "./Filters/AdvanceFilter";
 import { generateFilterMessage } from "../../utils/generateFIlterMessage";
+import Chart from "../ui/Chart";
+import Summary from "../ui/Summary";
 
 // New interface for the report generation API
 interface ReportGenerationRequest {
@@ -59,7 +61,8 @@ export const ChatInterface: React.FC<{
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string>("");
   const [parametersSubmitted, setParametersSubmitted] = useState(false);
-
+const [leftSidebarVisible, setLeftSidebarVisible] = useState(false);
+  const [rightSidebarVisible, setRightSidebarVisible] = useState(false);
   // Store form parameters for report generation
   const [reportParams, setReportParams] = useState<ParameterFormData | null>(
     null
@@ -385,163 +388,217 @@ const addFilterMessage = (
     // }
   };
 
-  return (
-    <div className=" flex items-center justify-center">
-      <div className="w-full max-w-5xl h-[100vh] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="bg-white/20 w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <Bot className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">AI Reporting Agent</h1>
-                <p className="text-blue-100 text-sm">
-                  Welcome, {session?.userName}
-                </p>
+return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="w-full max-w-7xl h-[100vh] flex gap-4 p-4 relative">
+        
+        {/* Left Sidebar Toggle Button */}
+        <div className="fixed left-4 top-1/2 transform -translate-y-1/2 z-10">
+          <button
+            onClick={() => setLeftSidebarVisible(!leftSidebarVisible)}
+            className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-full shadow-lg transition-colors"
+            title="Toggle Summary"
+          >
+            <FileText className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Left Sidebar - Summary Component */}
+        <div className={`transition-all duration-300 ease-in-out ${
+          leftSidebarVisible ? 'w-80 opacity-100' : 'w-0 opacity-0'
+        } flex-shrink-0 overflow-hidden`}>
+          <Summary isVisible={leftSidebarVisible} onToggle={() => setLeftSidebarVisible(!leftSidebarVisible)} />
+        </div>
+
+        {/* Main Chat Area - Centered with responsive width */}
+        <div className="flex-1 flex justify-center ">
+          <div className={`w-full transition-all duration-300 ease-in-out ${
+            leftSidebarVisible && rightSidebarVisible 
+              ? 'max-w-3xl' 
+              : leftSidebarVisible || rightSidebarVisible 
+                ? 'max-w-4xl' 
+                : 'max-w-5xl'
+          } bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col`}>
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-white/20 w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <Bot className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold">AI Reporting Agent</h1>
+                    <p className="text-blue-100 text-sm">
+                      Welcome, {session?.userName}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={clearChat}
+                    className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-200 backdrop-blur-sm border border-white/20"
+                    title="Clear Chat"
+                    disabled={
+                      chatMutation.isPending ||
+                      reportGenerationMutation.isPending ||
+                      isInitializing
+                    }
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">Clear Chat</span>
+                  </button>
+                  <button
+                    onClick={onClearSession}
+                    className="flex items-center space-x-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-100 rounded-lg transition-all duration-200 backdrop-blur-sm border border-red-400/30"
+                    title="Clear Session"
+                    disabled={
+                      chatMutation.isPending ||
+                      reportGenerationMutation.isPending ||
+                      isInitializing
+                    }
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span className="text-sm font-medium">New Session</span>
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={clearChat}
-                className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-200 backdrop-blur-sm border border-white/20"
-                title="Clear Chat"
+
+            {/* Parameter Form */}
+            {showParameterForm && apiSessionId && (
+              <ParameterForm
+                sessionId={apiSessionId}
+                onParametersSubmit={handleParametersSubmit}
                 disabled={
                   chatMutation.isPending ||
                   reportGenerationMutation.isPending ||
-                  isInitializing
+                  parametersSubmitted
                 }
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span className="text-sm font-medium">Clear Chat</span>
-              </button>
-              <button
-                onClick={onClearSession}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-100 rounded-lg transition-all duration-200 backdrop-blur-sm border border-red-400/30"
-                title="Clear Session"
+              />
+            )}
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto bg-white">
+              {isInitializing ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-gray-500">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-lg font-medium">Initializing AI Agent</p>
+                    <p className="text-sm">Connecting to the service...</p>
+                  </div>
+                </div>
+              ) : initError ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-red-500 max-w-md mx-auto px-4">
+                    <div className="bg-red-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                      <svg
+                        className="w-8 h-8"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-lg font-medium text-gray-800 mb-2">
+                      Connection Error
+                    </p>
+                    <p className="text-sm text-gray-600 mb-4">{initError}</p>
+                    <button
+                      onClick={() => {
+                        setInitError("");
+                        initializeChat();
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                </div>
+              ) : chatCleared && messages.length == 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-gray-500">
+                    <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                    <p className="text-lg font-medium">Chat cleared</p>
+                    <p className="text-sm">You can continue or start a new conversation</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="px-6 py-4 space-y-4 max-w-none">
+                  {/* Messages with improved styling */}
+                  {messages.map((message) => (
+                    <div key={message.id} className="w-full">
+                      <ChatMessage
+                        key={message.id}
+                        message={message}
+                        userName={session?.userName}
+                        sessionId={apiSessionId}
+                      />
+                    </div>
+                  ))}
+                  {(chatMutation.isPending ||
+                    reportGenerationMutation.isPending) && (
+                    <div className="flex items-center space-x-3 text-gray-500 px-4 py-3 bg-gray-50 rounded-xl max-w-sm">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+                      <span className="text-sm font-medium">
+                        {reportGenerationMutation.isPending
+                          ? "Generating report..."
+                          : "AI is thinking..."}
+                      </span>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+              {messages.length > 0 && messages.some((msg) => msg.type === "report") && (
+                <div className="px-6 pb-4">
+                  <AdvanceFilter
+                    ref={advanceFilterRef as any}
+                    key={messages.length}
+                    onFiltersApplied={addFilterMessage}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div className="bg-white border-t border-gray-200 px-6 py-4">
+              <ChatInput
+                onSendMessage={handleMessage}
                 disabled={
                   chatMutation.isPending ||
                   reportGenerationMutation.isPending ||
-                  isInitializing
+                  reportParams === null 
                 }
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span className="text-sm font-medium">New Session</span>
-              </button>
+                placeholder="Chat is disabled for now, please set report parameters from selection above"
+              />
             </div>
           </div>
         </div>
 
-        {/* Parameter Form */}
-        {showParameterForm && apiSessionId && (
-          <ParameterForm
-            sessionId={apiSessionId}
-            onParametersSubmit={handleParametersSubmit}
-            disabled={
-              chatMutation.isPending ||
-              reportGenerationMutation.isPending ||
-              parametersSubmitted
-            }
-          />
-        )}
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto bg-white">
-          {isInitializing ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center text-gray-500">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-                <p className="text-lg font-medium">Initializing AI Agent</p>
-                <p className="text-sm">Connecting to the service...</p>
-              </div>
-            </div>
-          ) : initError ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center text-red-500 max-w-md mx-auto px-4">
-                <div className="bg-red-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-8 h-8"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <p className="text-lg font-medium text-gray-800 mb-2">
-                  Connection Error
-                </p>
-                <p className="text-sm text-gray-600 mb-4">{initError}</p>
-                <button
-                  onClick={() => {
-                    setInitError("");
-                    initializeChat();
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Try Again
-                </button>
-              </div>
-            </div>
-          ) : chatCleared && messages.length == 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center text-gray-500">
-                <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                <p className="text-lg font-medium">Chat cleared</p>
-                <p className="text-sm">You can continue or start a new conversation</p>
-              </div>
-            </div>
-          ) : (
-            <div className="px-4 py-4 space-y-4">
-              {/* Non-text Messages, Only report */}
-              {messages.map((message) => (
-                <ChatMessage
-                  key={message.id}
-                  message={message}
-                  userName={session?.userName}
-                  sessionId={apiSessionId}
-                />
-              ))}
-              {(chatMutation.isPending ||
-                reportGenerationMutation.isPending) && (
-                <div className="flex items-center space-x-3 text-gray-500 px-4 py-3 bg-gray-50 rounded-lg">
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
-                  <span className="text-sm">
-                    {reportGenerationMutation.isPending
-                      ? "Generating report..."
-                      : "AI is thinking..."}
-                  </span>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-          {messages.length > 0 && messages.some((msg) => msg.type === "report") && (
-  <AdvanceFilter
-    ref={advanceFilterRef as any}
-    key={messages.length}
-    onFiltersApplied={addFilterMessage}
-  />
-)}
+        {/* Right Sidebar - Chart Component */}
+        <div className={`transition-all duration-300 ease-in-out ${
+          rightSidebarVisible ? 'w-80 opacity-100' : 'w-0 opacity-0'
+        } flex-shrink-0 overflow-hidden`}>
+          <Chart isVisible={rightSidebarVisible} onToggle={() => setRightSidebarVisible(!rightSidebarVisible)} />
         </div>
 
-        {/* Input */}
- <div className="bg-white border-t border-gray-200 px-6 py-4">
-          <ChatInput
-            onSendMessage={handleMessage}
-              disabled={
-              chatMutation.isPending ||
-              reportGenerationMutation.isPending ||
-              reportParams === null 
-            }
-            placeholder="Chat is disabled for now, please set report parameters from selection above"
-          />
+        {/* Right Sidebar Toggle Button */}
+        <div className="fixed right-4 top-1/2 transform -translate-y-1/2 z-10">
+          <button
+            onClick={() => setRightSidebarVisible(!rightSidebarVisible)}
+            className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full shadow-lg transition-colors"
+            title="Toggle Analytics"
+          >
+            <BarChart3 className="w-5 h-5" />
+          </button>
         </div>
-        </div>
+        
+      </div>
     </div>
   );
 };
+
