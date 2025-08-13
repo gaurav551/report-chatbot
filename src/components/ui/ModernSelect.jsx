@@ -11,7 +11,8 @@ const ModernSelect = ({
   placeholder = "Select...", 
   loading = false,
   disabled = false,
-  color = 'blue'
+  color = 'blue',
+  showCodeLabel = false // New prop to control code-label display
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,7 +46,8 @@ const ModernSelect = ({
   const colors = colorVariants[color] || colorVariants.blue;
 
   const filteredOptions = options?.filter(option =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
+    option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    option.code.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   // Handle clicking outside to close dropdown
@@ -107,16 +109,25 @@ const ModernSelect = ({
     }
   };
 
+  // Helper function to format display text
+  const formatDisplayText = (option) => {
+    if (!option) return '';
+    return showCodeLabel ? `${option.code} - ${option.label}` : option.label;
+  };
+
   const getDisplayValue = () => {
     if (loading) return "Loading...";
     
     if (single) {
       const selected = options?.find(opt => opt.code === value);
-      return selected ? selected.label : placeholder;
+      return selected ? formatDisplayText(selected) : placeholder;
     } else if (multiple) {
       const selectedCount = Array.isArray(value) ? value.length : 0;
       if (selectedCount === 0) return placeholder;
-      if (selectedCount === 1) return options?.find(opt => opt.code === value[0])?.label || placeholder;
+      if (selectedCount === 1) {
+        const selected = options?.find(opt => opt.code === value[0]);
+        return selected ? formatDisplayText(selected) : placeholder;
+      }
       return `${selectedCount} selected`;
     }
     return placeholder;
@@ -264,7 +275,9 @@ const ModernSelect = ({
                         )}
                       </div>
                     )}
-                    <span className="text-sm text-gray-900 flex-1">{option.label}</span>
+                    <div className="flex-1">
+                      <span className="text-sm text-gray-900">{formatDisplayText(option)}</span>
+                    </div>
                     {single && value === option.code && (
                       <Check size={16} className={colors.button.includes('blue') ? 'text-blue-600' : colors.button.includes('green') ? 'text-green-600' : 'text-red-600'} />
                     )}
@@ -285,7 +298,7 @@ const ModernSelect = ({
                 key={index}
                 className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colors.tag}`}
               >
-                <span className="mr-1">{item.label}</span>
+                <span className="mr-1">{formatDisplayText(item)}</span>
                 {!disabled && (
                   <button
                     type="button"
@@ -308,5 +321,4 @@ const ModernSelect = ({
     </div>
   );
 };
-
 export default ModernSelect;

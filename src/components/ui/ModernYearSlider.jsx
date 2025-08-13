@@ -90,7 +90,7 @@ const CompactYearCarousel = ({
         </button>
 
         {/* Current Year Display */}
-        <div className="relative w-20 h-8 overflow-hidden flex items-center justify-center border-x border-gray-100">
+        <div className="relative w-40 h-8 overflow-hidden flex items-center justify-center border-x border-gray-100">
           <div 
             className={`
               px-2 py-1 text-sm font-medium rounded transition-all duration-200

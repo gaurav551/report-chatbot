@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { ChatSession } from "../../interfaces/Message";
 import { LoginForm } from "./LoginForm";
-import { ChatGroq } from "./ChatGroq";
-import { ChatBot } from "./ChatBot";
-import { ChatInterface } from "./ChatInterface";
+import { ChatMain } from "./ChatMain";
+import { ChatHeader } from "./ChatHeader";
+
+
 
 const ChatV2: React.FC = () => {
   const [session, setSession] = useState<ChatSession | null>(null);
@@ -36,7 +37,7 @@ const ChatV2: React.FC = () => {
     return <LoginForm onLogin={handleLogin} />;
   }
 
-  return <ChatInterface session={session} onClearSession={handleClearSession} />;
+  return <ChatHeader session={session} onClearSession={handleClearSession} />; // Updated component
 };
 
 export default ChatV2;

@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { ChatApiRequest, ChatApiResponse, ChatSession, Message } from "../../interfaces/Message";
-import { Bot, RotateCcw, MessageCircle } from "lucide-react";
+import { Bot, MessageCircle } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
-import { ReportBaseUrl } from "../../const/url";
 import { detectReportOutput } from "../../utils/detectReport";
 
 const chatApi = async (params: ChatApiRequest): Promise<ChatApiResponse> => {
@@ -13,27 +12,50 @@ const chatApi = async (params: ChatApiRequest): Promise<ChatApiResponse> => {
   return response.data;
 };
 
-
-
-export const ChatInterface: React.FC<{
+interface ChatInterfaceProps {
   session: ChatSession;
-  onClearSession: () => void;
-}> = ({ session, onClearSession }) => {
+  onApiSessionIdChange: (sessionId: string) => void;
+  onMessagesChange: (messages: Message[]) => void; // Add this new prop
+}
+
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
+  session, 
+  onApiSessionIdChange,
+  onMessagesChange // Add this prop
+}) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession>(session);
   const [apiSessionId, setApiSessionId] = useState<string>("");
+  const [chatCleared, setChatCleared] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(message.text);
-    } catch (error) {
-      console.error('Failed to copy text:', error);
+
+  // Update parent component with messages whenever they change
+  useEffect(() => {
+    onMessagesChange(messages);
+  }, [messages, onMessagesChange]);
+
+  // Listen for clear chat events from parent
+  useEffect(() => {
+    const handleClearChat = () => {
+      clearChat();
+    };
+
+    window.addEventListener('clearChat', handleClearChat);
+    return () => {
+      window.removeEventListener('clearChat', handleClearChat);
+    };
+  }, []);
+
+  // Update parent with session ID changes
+  useEffect(() => {
+    if (apiSessionId) {
+      onApiSessionIdChange(apiSessionId);
     }
-  };
+  }, [apiSessionId, onApiSessionIdChange]);
 
   useEffect(() => {
     scrollToBottom();
@@ -62,8 +84,9 @@ const copyToClipboard = async () => {
   });
 
   const addBotMessage = (text: string, type: 'text' | 'report' = 'text', reportUrl?: string) => {
-    //ignore default message, becuase username is already sent
+    // Ignore default message, because username is already sent
     if(text.trim() === 'Please enter your user ID (default: Guest):') return;
+    
     const newMessage: Message = {
       id: Date.now().toString(),
       text,
@@ -92,7 +115,7 @@ const copyToClipboard = async () => {
       
       // Set the session ID from the response
       setApiSessionId(initialResponse.session_id);
-      addBotMessage(`Hi ${session.userName}! I'm AI Reporting Agent, your AI assistant for generating reports`);
+      addBotMessage(`Hi ${session.userName}! I'm AI Reporting Agent, your AI assistant for generating reports`);
 
       // Add the initial bot response
       addBotMessage(initialResponse.reply);
@@ -114,6 +137,7 @@ const copyToClipboard = async () => {
     setCurrentSession(session);
     setMessages([]);
     setApiSessionId("");
+    setChatCleared(false);
     
     // Initialize chat with API
     const timer = setTimeout(() => {
@@ -125,10 +149,15 @@ const copyToClipboard = async () => {
 
   const clearChat = () => {
     setMessages([]);
-    
+    setChatCleared(true);
   };
 
   const handleMessage = async (messageText: string) => {
+    // Hide the cleared message when user starts typing
+    if (chatCleared) {
+      setChatCleared(false);
+    }
+
     addUserMessage(messageText);
     
     // Make API call with current session ID and user message
@@ -139,90 +168,65 @@ const copyToClipboard = async () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
-      <div className="w-full max-w-5xl h-[100vh] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="bg-white/20 w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <Bot className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">AI Reporting Agent</h1>
-                <p className="text-blue-100 text-sm">Welcome, {session?.userName}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={clearChat}
-                className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-200 backdrop-blur-sm border border-white/20"
-                title="Clear Chat"
-                disabled={chatMutation.isPending}
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span className="text-sm font-medium">Clear Chat</span>
-              </button>
-              <button
-                onClick={onClearSession}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-100 rounded-lg transition-all duration-200 backdrop-blur-sm border border-red-400/30"
-                title="Clear Session"
-                disabled={chatMutation.isPending}
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span className="text-sm font-medium">New Session</span>
-              </button>
+    <>
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto bg-gray-50/50">
+        {chatCleared && messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center text-gray-500">
+              <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+              <p className="text-lg font-medium">Chat cleared</p>
+              <p className="text-sm">You can continue or start a new conversation</p>
             </div>
           </div>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto bg-gray-50/50">
-          {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-gray-400">
-              <div className="text-center">
-                <Bot className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium">Starting conversation...</p>
-                <p className="text-sm">I'll help you generate reports</p>
-              </div>
+        ) : messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-gray-400">
+            <div className="text-center">
+              <Bot className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <p className="text-lg font-medium">Starting conversation...</p>
+              <p className="text-sm">I'll help you generate reports</p>
             </div>
-          ) : (
-            <div className="px-4 py-4 space-y-4">
-              {messages.map((message) => (
-                <ChatMessage 
-                  key={message.id} 
-                  message={message} 
-                  userName={session?.userName}
-                  sessionId={apiSessionId}
-                />
-              ))}
-              {chatMutation.isPending && (
-                <div className="flex justify-start">
-                  <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm border border-gray-100">
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-blue-100 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Bot className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      </div>
-                      <span className="text-sm text-gray-500">Thinking...</span>
+          </div>
+        ) : (
+          <div className="px-4 py-4 space-y-4">
+            {messages.map((message) => (
+              <ChatMessage 
+                key={message.id} 
+                message={message} 
+                userName={session?.userName}
+                sessionId={apiSessionId}
+              />
+            ))}
+            {chatMutation.isPending && (
+              <div className="flex justify-start">
+                <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm border border-gray-100">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-blue-100 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Bot className="w-5 h-5 text-blue-600" />
                     </div>
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                    <span className="text-sm text-gray-500">Thinking...</span>
                   </div>
                 </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </div>
-            
-        {/* Input */}
-        <div className="bg-white border-t border-gray-200 px-6 py-4">
-          <ChatInput  onSendMessage={handleMessage} disabled={chatMutation.isPending} />
-        </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
       </div>
-    </div>
-  )
-}
+          
+      {/* Input */}
+      <div className="bg-white border-t border-gray-200 px-6 py-4">
+        <ChatInput 
+          onSendMessage={handleMessage} 
+          disabled={chatMutation.isPending}
+          placeholder="Type your message here..."
+        />
+      </div>
+    </>
+  );
+};

@@ -34,7 +34,7 @@ const Summary = ({ isVisible, onToggle, userName, sessionId }) => {
     queryKey: ['summaryData', userName, sessionId],
     queryFn: () => fetchSummaryData(summaryUrl),
     enabled: isVisible && !!userName && !!sessionId,
-    staleTime: 5 * 60 * 1000,
+
   });
 
   if (!isVisible) return null;

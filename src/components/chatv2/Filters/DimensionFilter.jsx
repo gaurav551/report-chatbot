@@ -80,14 +80,15 @@ const DimensionFieldFilter = ({ field, filter, onFilterChange, options, loading 
       {filter.type === 'range' && (
         <div className="flex space-x-1.5">
           <div className="flex-1">
-            <ModernSelect
+            {<ModernSelect
               value={filter.rangeFrom || ''}
               onChange={(value) => onFilterChange({ ...filter, rangeFrom: value })}
               options={options}
               single={true}
               placeholder="From..."
               loading={loading}
-            />
+              showCodeLabel
+            />}
           </div>
           <span className="text-gray-400 self-center text-sm">-</span>
           <div className="flex-1">
@@ -98,6 +99,7 @@ const DimensionFieldFilter = ({ field, filter, onFilterChange, options, loading 
               single={true}
               placeholder="To..."
               loading={loading}
+              showCodeLabel
             />
           </div>
         </div>
@@ -118,6 +120,7 @@ const DimensionFieldFilter = ({ field, filter, onFilterChange, options, loading 
           multiple={filter.type === 'multiple'}
           placeholder={`Select ${field}...`}
           loading={loading}
+          showCodeLabel
         />
       )}
     </div>
@@ -194,10 +197,10 @@ const DimensionFilter = ({
     const rawOptions = dimensionsData.dimensions[apiField] || [];
     
     // Transform the options to work with ModernSelect (expects 'code' and 'label' properties)
-    return rawOptions.map(option => ({
-      code: option.code,
-      label: option.code  // Show only code in dropdown
-    }));
+   return rawOptions.map(option => ({
+  code: option.code,
+  label: option.label || option.name || option.description || option.code  // Use proper label
+}));
   };
 
   const generateDimensionCriteria = (fieldsToInclude) => {

@@ -176,24 +176,9 @@ export const ParameterForm: React.FC<ParameterFormProps> = ({
   return (
     <div className="border-b p-3">
       <div className="max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Report Selection */}
-          <div>
-            <select
-              value={formData.reportSelection}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  reportSelection: e.target.value,
-                }))
-              }
-              className="w-full p-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled={true}
-            >
-              <option value="Current Version">Current Version</option>
-              <option value="New Version Reports">New Version Reports</option>
-            </select>
-          </div>
+          
 
           {/* Budget Year */}
           <CompactYearCarousel
