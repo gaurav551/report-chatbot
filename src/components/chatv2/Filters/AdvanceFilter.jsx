@@ -57,7 +57,8 @@ const AdvanceFilter = forwardRef(
       handleSubmit,
     }));
 
-    const toggleExpanded = () => {
+    const toggleExpanded = (e) => {
+      e.stopPropagation(); // Prevent event bubbling
       setIsExpanded(!isExpanded);
     };
 
@@ -71,15 +72,16 @@ const AdvanceFilter = forwardRef(
           <div className="space-y-8">
             {/* Expandable Advance Analysis Button */}
             <div className="relative">
-              <button className="w-full p-6 flex flex-col items-start text-left bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-white/30 rounded-lg shadow-lg hover:from-blue-500/30 hover:to-purple-500/30 hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
+              <div className="w-full p-6 flex flex-col items-start text-left bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-white/30 rounded-lg shadow-lg hover:from-blue-500/30 hover:to-purple-500/30 hover:shadow-xl transition-all duration-300">
                 <div className="w-full flex items-center justify-between">
                   <span className="text-sm font-semibold text-gray-800">
                     Advanced Analysis
                   </span>
                   <div
-                    className={`transition-transform duration-300 ${
+                    className={`transition-transform duration-300 cursor-pointer ${
                       !isExpanded ? "rotate-180" : "rotate-0"
                     }`}
+                    onClick={toggleExpanded}
                   >
                     <ChevronDown className="w-5 h-5 text-gray-700" />
                   </div>
@@ -92,9 +94,14 @@ const AdvanceFilter = forwardRef(
                     onChange={toggleExpanded}
                     className="mr-2"
                   />
-                  <label className="text-xs text-gray-500">Full Report</label>
+                  <label 
+                    className="text-xs text-gray-500 cursor-pointer select-none"
+                    onClick={toggleExpanded}
+                  >
+                    Full Report
+                  </label>
                 </div>
-              </button>
+              </div>
             </div>
 
             {/* Filter Sections - Shown when expanded */}

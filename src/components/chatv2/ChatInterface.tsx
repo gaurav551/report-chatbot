@@ -393,7 +393,7 @@ return (
       <div className="w-full max-w-7xl h-[100vh] flex gap-4 p-4 relative">
         
         {/* Left Sidebar Toggle Button */}
-        <div className="fixed left-4 top-1/2 transform -translate-y-1/2 z-10">
+       {true && <div className="fixed left-4 top-1/2 transform -translate-y-1/2 z-10">
           <button
             onClick={() => setLeftSidebarVisible(!leftSidebarVisible)}
             className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-full shadow-lg transition-colors"
@@ -401,13 +401,14 @@ return (
           >
             <FileText className="w-5 h-5" />
           </button>
-        </div>
+        </div>}
 
         {/* Left Sidebar - Summary Component */}
         <div className={`transition-all duration-300 ease-in-out ${
           leftSidebarVisible ? 'w-80 opacity-100' : 'w-0 opacity-0'
         } flex-shrink-0 overflow-hidden`}>
-          <Summary isVisible={leftSidebarVisible} onToggle={() => setLeftSidebarVisible(!leftSidebarVisible)} />
+          <Summary isVisible={leftSidebarVisible} onToggle={() => setLeftSidebarVisible(!leftSidebarVisible)} userName={session?.userName}
+                        sessionId={apiSessionId}/>
         </div>
 
         {/* Main Chat Area - Centered with responsive width */}
@@ -567,6 +568,7 @@ return (
             {/* Input */}
             <div className="bg-white border-t border-gray-200 px-6 py-4">
               <ChatInput
+              
                 onSendMessage={handleMessage}
                 disabled={
                   chatMutation.isPending ||
@@ -583,11 +585,11 @@ return (
         <div className={`transition-all duration-300 ease-in-out ${
           rightSidebarVisible ? 'w-80 opacity-100' : 'w-0 opacity-0'
         } flex-shrink-0 overflow-hidden`}>
-          <Chart isVisible={rightSidebarVisible} onToggle={() => setRightSidebarVisible(!rightSidebarVisible)} />
+          <Chart isVisible={rightSidebarVisible} onToggle={() => setRightSidebarVisible(!rightSidebarVisible)} key={messages.length} userName={session?.userName} sessionId={apiSessionId} />
         </div>
 
         {/* Right Sidebar Toggle Button */}
-        <div className="fixed right-4 top-1/2 transform -translate-y-1/2 z-10">
+       {true && <div className="fixed right-4 top-1/2 transform -translate-y-1/2 z-10">
           <button
             onClick={() => setRightSidebarVisible(!rightSidebarVisible)}
             className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full shadow-lg transition-colors"
@@ -595,7 +597,7 @@ return (
           >
             <BarChart3 className="w-5 h-5" />
           </button>
-        </div>
+        </div>}
         
       </div>
     </div>

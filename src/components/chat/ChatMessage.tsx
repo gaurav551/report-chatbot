@@ -1,4 +1,4 @@
-import { Bot, User, Maximize2, Minimize2, Download, Printer } from "lucide-react";
+import { Bot, User, Maximize2, Minimize2, Download, Printer, Copy } from "lucide-react";
 import { useState } from "react";
 import { Message } from "../../interfaces/Message";
 import { ReportBaseUrl } from "../../const/url";
@@ -17,7 +17,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName, ses
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
-
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(message.text);
+    } catch (error) {
+      console.error('Failed to copy text:', error);
+    }
+  };
   const availableFiles = [
     { filename: 'yourfile.csv', type: 'CSV', displayName: 'CSV Data' },
     { filename: 'department_summary.json', type: 'JSON', displayName: 'JSON Data' },
@@ -214,7 +220,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName, ses
                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
-            {message.isUser && <User className="w-5 h-5 mt-0.5 text-blue-200 flex-shrink-0" />}
+            {message.isUser && <> <button
+                  onClick={copyToClipboard}
+                  className="text-blue-200 hover:text-white transition-colors"
+                  title="Copy message"
+                >
+                  <Copy className="w-4 h-4" />
+                </button> <User className="w-5 h-5 text-blue-200 flex-shrink-0" /></>}
           </div>
         </div>
       </div>

@@ -27,6 +27,13 @@ export const ChatInterface: React.FC<{
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(message.text);
+    } catch (error) {
+      console.error('Failed to copy text:', error);
+    }
+  };
 
   useEffect(() => {
     scrollToBottom();
