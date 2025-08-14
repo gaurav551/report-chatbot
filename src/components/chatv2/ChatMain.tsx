@@ -433,7 +433,7 @@ export const ChatMain: React.FC<ChatMainProps> = ({
             </div>
           </div>
         ) : (
-          <div className="px-6 py-4 space-y-4 max-w-none">
+          <div className="px-3 py-4 space-y-4 max-w-none">
             {/* Messages with improved styling */}
             {messages.map((message) => (
               <div key={message.id} className="w-full">
@@ -460,7 +460,7 @@ export const ChatMain: React.FC<ChatMainProps> = ({
           </div>
         )}
         {messages.length > 0 && messages.some((msg) => msg.type === "report") && (
-          <div className="px-6 pb-4">
+          <div className="px-2 pb-2">
             <AdvanceFilter
               ref={advanceFilterRef as any}
               key={messages.length}
@@ -471,7 +471,7 @@ export const ChatMain: React.FC<ChatMainProps> = ({
       </div>
 
       {/* Input */}
-      <div className="bg-white border-t border-gray-200 px-6 py-4">
+      <div className="bg-white border-t border-gray-200 px-2 py-2">
         <ChatInput
           onSendMessage={handleMessage}
           disabled={

@@ -64,45 +64,39 @@ const AdvanceFilter = forwardRef(
 
     return (
       <div
-        className={`bg-gray-50 py-8 transition-opacity duration-300 ${
+        className={`transition-opacity duration-300 bg-gray-50 py-2 ${
           isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
       >
         <div className="px-4">
           <div className="space-y-8">
-            {/* Expandable Advance Analysis Button */}
-            <div className="relative">
-              <div className="w-full p-6 flex flex-col items-start text-left bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-white/30 rounded-lg shadow-lg hover:from-blue-500/30 hover:to-purple-500/30 hover:shadow-xl transition-all duration-300">
-                <div className="w-full flex items-center justify-between">
-                  <span className="text-sm font-semibold text-gray-800">
-                    Advanced Analysis
-                  </span>
-                  <div
-                    className={`transition-transform duration-300 cursor-pointer ${
-                      !isExpanded ? "rotate-180" : "rotate-0"
-                    }`}
-                    onClick={toggleExpanded}
-                  >
-                    <ChevronDown className="w-5 h-5 text-gray-700" />
-                  </div>
-                </div>
-
-                <div className="flex items-center mt-2">
-                  <input
-                    type="checkbox"
-                    checked={isExpanded}
-                    onChange={toggleExpanded}
-                    className="mr-2"
-                  />
-                  <label 
-                    className="text-xs text-gray-500 cursor-pointer select-none"
-                    onClick={toggleExpanded}
-                  >
-                    Full Report
-                  </label>
+            {/* Compact Full Report Toggle - always visible and left-aligned */}
+            <div className="flex items-center justify-start">
+              <div className="inline-flex items-center bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200">
+                <input
+                  type="checkbox"
+                  checked={isExpanded}
+                  onChange={toggleExpanded}
+                  className="mr-2 w-3 h-3"
+                />
+                <label 
+                  className="text-xs font-medium text-gray-600 cursor-pointer select-none mr-2"
+                  onClick={toggleExpanded}
+                >
+                  Full Report
+                </label>
+                <div
+                  className={`transition-transform duration-300 cursor-pointer ${
+                    !isExpanded ? "rotate-180" : "rotate-0"
+                  }`}
+                  onClick={toggleExpanded}
+                >
+                  <ChevronDown className="w-3 h-3 text-gray-500" />
                 </div>
               </div>
             </div>
+
+
 
             {/* Filter Sections - Shown when expanded */}
             <div

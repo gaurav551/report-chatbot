@@ -174,7 +174,7 @@ export const ParameterForm: React.FC<ParameterFormProps> = ({
     formData.departments.length > 0;
 
   return (
-    <div className="border-b p-3">
+    <div className="border-b p-1">
       <div className="max-w-5xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Report Selection */}

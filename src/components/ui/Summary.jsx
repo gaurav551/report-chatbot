@@ -50,8 +50,8 @@ const Summary = ({ isVisible, onToggle, userName, sessionId }) => {
     const totalExpenseActual = expenses?.find(e => e.category.includes('Actual'))?.amount || 0;
     const netPosition = totalRevenueActual - totalExpenseActual;
     
-    const sentence1 = `The organization generated ${formatCurrency(totalRevenueActual)} in total revenue against ${formatCurrency(totalExpenseActual)} in expenses.`;
-    const sentence2 = `This results in a ${netPosition >= 0 ? 'surplus' : 'deficit'} of ${formatCurrency(Math.abs(netPosition))}, indicating ${netPosition >= 0 ? 'positive' : 'challenging'} financial performance.`;
+    const sentence1 = `The budget-to-actual report reflects  ${formatCurrency(totalRevenueActual)} in total revenue and total expenses of ${formatCurrency(totalExpenseActual)}, resulting in a ${netPosition >= 0 ? 'surplus' : 'deficit'} of ${formatCurrency(Math.abs(netPosition))}.`;
+    const sentence2 = `This results in a ${netPosition >= 0 ? 'surplus' : 'deficit'} of ${formatCurrency(Math.abs(netPosition))}, indicating ${netPosition >= 0 ? 'positive' : 'challenging'} financial position.`;
     
     return { sentence1, sentence2 };
   };

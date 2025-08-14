@@ -55,7 +55,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="w-full max-w-7xl h-[100vh] flex gap-4 p-4 relative">
+      <div className="w-full max-w-7xl h-[100vh] flex gap-4  relative">
         
         {/* Left Sidebar Toggle Button - Only show if there are report messages */}
         {hasReportMessages && (
@@ -157,13 +157,13 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
         {/* Right Sidebar - Chart Component */}
         <div className={`transition-all duration-300 ease-in-out ${
-          rightSidebarVisible && hasReportMessages ? 'w-80 opacity-100' : 'w-0 opacity-0'
+          leftSidebarVisible && hasReportMessages ? 'w-80 opacity-100' : 'w-0 opacity-0'
         } flex-shrink-0 overflow-hidden`}>
           {hasReportMessages && (
             <Chart 
               key={`chart-${reportCount}`}
-              isVisible={rightSidebarVisible} 
-              onToggle={() => setRightSidebarVisible(!rightSidebarVisible)} 
+              isVisible={leftSidebarVisible} 
+              onToggle={() => setLeftSidebarVisible(!leftSidebarVisible)} 
               userName={session?.userName} 
               sessionId={apiSessionId} 
             />
@@ -174,7 +174,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         {hasReportMessages && (
           <div className="fixed right-4 top-1/2 transform -translate-y-1/2 z-10">
             <button
-              onClick={() => setRightSidebarVisible(!rightSidebarVisible)}
+              onClick={() => setLeftSidebarVisible(!leftSidebarVisible)}
               className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full shadow-lg transition-colors"
               title="Toggle Analytics"
             >

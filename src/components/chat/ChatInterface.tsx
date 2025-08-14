@@ -220,7 +220,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
           
       {/* Input */}
-      <div className="bg-white border-t border-gray-200 px-6 py-4">
+      <div className="bg-white border-t border-gray-200 px-2 py-2">
         <ChatInput 
           onSendMessage={handleMessage} 
           disabled={chatMutation.isPending}
