@@ -378,9 +378,20 @@ const MeasureFilter = ({
                         {field.label}
                       </h4>
                       {/* Show tags for which query this field affects */}
-                      <div className="flex gap-1">
-                       
-                      </div>
+                     
+{/* Show tags for which query this field affects */}
+<div className="flex gap-1">
+  {isRevenueField && (
+    <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-md font-medium">
+      REV
+    </span>
+  )}
+  {isExpenseField && (
+    <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-md font-medium">
+      EXP
+    </span>
+  )}
+</div>
                     </div>
                     
                     {/* Display selected filter value */}

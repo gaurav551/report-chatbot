@@ -69,7 +69,7 @@ const AdvanceFilter = forwardRef(
         }`}
       >
         <div className="px-4">
-          <div className="space-y-8">
+          <div className="space-y-2">
             {/* Compact Full Report Toggle - always visible and left-aligned */}
             <div className="flex items-center justify-start">
               <div className="inline-flex items-center bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200">
@@ -80,10 +80,11 @@ const AdvanceFilter = forwardRef(
                   className="mr-2 w-3 h-3"
                 />
                 <label 
-                  className="text-xs font-medium text-gray-600 cursor-pointer select-none mr-2"
+                  className="text-sm font-medium text-gray-600 cursor-pointer select-none mr-2"
                   onClick={toggleExpanded}
                 >
                   Full Report
+                  <div className="text-xs">Advance Analysis</div>
                 </label>
                 <div
                   className={`transition-transform duration-300 cursor-pointer ${

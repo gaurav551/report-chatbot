@@ -21,7 +21,7 @@ const Chart = ({isVisible, onToggle, userName, sessionId}) => {
   // Colors for pie chart
   const pieColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
-  // Prepare bar chart data from API response
+  // Prepare bar chart data from API response (ORIGINAL - UNCHANGED)
   const getBarChartData = () => {
     if (!data?.expense_charts?.expense_by_dept_bar) return [];
     
@@ -33,15 +33,28 @@ const Chart = ({isVisible, onToggle, userName, sessionId}) => {
     }));
   };
 
-  // Prepare pie chart data from API response
+  // Prepare pie chart data with balanced visualization (IMPROVED)
   const getPieChartData = () => {
     if (!data?.revenue_charts?.revenue_by_dept_pie) return [];
     
-    return data.revenue_charts.revenue_by_dept_pie.map((item, index) => ({
-      name: item.name.split(' - ')[1] || item.name,
-      value: Math.round((item.actual / 1000000) * 100) / 100, // Convert to millions
-      color: pieColors[index % pieColors.length]
-    }));
+    const filteredData = data.revenue_charts.revenue_by_dept_pie.filter(item => item.actual > 0);
+    const total = filteredData.reduce((sum, item) => sum + item.actual, 0);
+    
+    return filteredData.map((item, index) => {
+      const actualValue = Math.round((item.actual / 1000000) * 100) / 100;
+      const percentage = (item.actual / total * 100).toFixed(1);
+      
+      // Use square root scaling to make smaller values more visible
+      const scaledValue = Math.sqrt(item.actual);
+      
+      return {
+        name: item.name.split(' - ')[1] || item.name,
+        value: scaledValue, // Use scaled value for pie chart
+        actualValue: actualValue, // Keep actual value for display
+        percentage: percentage,
+        color: pieColors[index % pieColors.length]
+      };
+    });
   };
 
   // Custom tooltips
@@ -65,8 +78,9 @@ const Chart = ({isVisible, onToggle, userName, sessionId}) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-          <p className="font-medium text-gray-800">{payload[0].name}</p>
-          <p className="text-blue-600">{`$${payload[0].value}M`}</p>
+          <p className="font-medium text-gray-800">{payload[0].payload.name}</p>
+          <p className="text-blue-600">${payload[0].payload.actualValue}M</p>
+          <p className="text-gray-500 text-sm">{payload[0].payload.percentage}% of total</p>
         </div>
       );
     }
@@ -217,7 +231,7 @@ const Chart = ({isVisible, onToggle, userName, sessionId}) => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-gray-800">Revenue by Department</h3>
-                  <div className="text-xs text-gray-500">In millions ($M)</div>
+                  <div className="text-xs text-gray-500">Square root scale for better visibility</div>
                 </div>
                 
                 <div className="h-64">
@@ -229,7 +243,7 @@ const Chart = ({isVisible, onToggle, userName, sessionId}) => {
                         cy="50%"
                         innerRadius={50}
                         outerRadius={100}
-                        paddingAngle={2}
+                        paddingAngle={1}
                         dataKey="value"
                       >
                         {pieChartData.map((entry, index) => (
@@ -252,7 +266,10 @@ const Chart = ({isVisible, onToggle, userName, sessionId}) => {
                         />
                         <span className="text-gray-700">{entry.name}</span>
                       </div>
-                      <span className="font-medium text-gray-800">${entry.value}M</span>
+                      <div className="text-right">
+                        <span className="font-medium text-gray-800">${entry.actualValue}M</span>
+                        <span className="text-gray-500 text-xs ml-2">({entry.percentage}%)</span>
+                      </div>
                     </div>
                   ))}
                 </div>

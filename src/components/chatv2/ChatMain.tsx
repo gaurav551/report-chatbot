@@ -259,19 +259,10 @@ export const ChatMain: React.FC<ChatMainProps> = ({
 
   const clearChat = () => {
     setMessages([]);
-    setShowParameterForm(true);
+   
     setChatCleared(true);
     setInitError("");
-    setParametersSubmitted(false);
-    setReportParams(null);
-    setFilterParams({
-      measures_requested_rev: null,
-      dimension_filter_rev: null,
-      measures_filter_rev: null,
-      measures_requested_exp: null,
-      dimension_filter_exp: null,
-      measures_filter_exp: null,
-    });
+    
   };
 
   const handleParametersSubmit = async (params: ParameterFormData) => {
@@ -459,7 +450,7 @@ export const ChatMain: React.FC<ChatMainProps> = ({
             <div ref={messagesEndRef} />
           </div>
         )}
-        {messages.length > 0 && messages.some((msg) => msg.type === "report") && (
+        {((messages.length > 0 && messages.some((msg) => msg.type === "report")) || chatCleared)  && (
           <div className="px-2 pb-2">
             <AdvanceFilter
               ref={advanceFilterRef as any}
