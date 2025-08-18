@@ -225,7 +225,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           onSendMessage={handleMessage} 
           disabled={chatMutation.isPending}
           placeholder="Type your message here..."
-        
+          isVoiceEnabled={true}
         />
       </div>
     </div>
