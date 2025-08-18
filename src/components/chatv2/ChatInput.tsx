@@ -47,7 +47,7 @@ export const ChatInput = forwardRef<HTMLInputElement, {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyPress={handleKeyPress}
-        disabled={true}
+        disabled={disabled}
         autoFocus
         className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-100"
         placeholder={placeholder}

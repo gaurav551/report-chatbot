@@ -5,6 +5,7 @@ import Summary from "../ui/Summary";
 import { ChatMain } from "./ChatMain";
 import Chart from "../ui/Chart";
 import { ChatInterface } from "../chat/ChatInterface";
+import { ChatVoice } from "../voice/ChatVoice";
 
 interface ChatHeaderProps {
   session: ChatSession;
@@ -250,6 +251,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   >
                     <option value="Budgets-NLP" className="bg-blue-600 text-white">Budgets-NLP</option>
                     <option value="Budgets-PRO" className="bg-blue-600 text-white">Budgets-PRO</option>
+                    <option value="Budgets-Voice" className="bg-blue-600 text-white">Budgets-Voice</option>
+
                   </select>
                   <button
                     onClick={handleClearChat}
@@ -279,7 +282,9 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   onApiSessionIdChange={handleApiSessionIdChange}
                   onMessagesChange={handleMessagesChange}
                 />
-              ) : (
+              ) : selectedVersion == "Budgets-Voice" ? (<ChatVoice  session={session}
+                  onApiSessionIdChange={handleApiSessionIdChange}
+                  onMessagesChange={handleMessagesChange}/>) : (
                 <ChatInterface   
                   session={session}
                   onApiSessionIdChange={handleApiSessionIdChange}

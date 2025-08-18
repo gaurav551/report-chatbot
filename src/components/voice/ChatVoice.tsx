@@ -8,13 +8,16 @@ import {
   Message,
 } from "../../interfaces/Message";
 import { MessageCircle } from "lucide-react";
-import { ChatMessage } from "./ChatMessage";
-import { ChatInput } from "./ChatInput";
-import { ParameterForm, ParameterFormData } from "./ParameterForm";
+
 import { detectReportOutput } from "../../utils/detectReport";
-import AdvanceFilter from "./Filters/AdvanceFilter";
+
 import { generateFilterMessage } from "../../utils/generateFIlterMessage";
 import { ReportGenerationRequest } from "../../interfaces/ReportGenerationRequest";
+import { ChatMessage } from "../chatv2/ChatMessage";
+import { ParameterForm, ParameterFormData } from "../chatv2/ParameterForm";
+import AdvanceFilter from "../chatv2/Filters/AdvanceFilter";
+import { ChatInput } from "../chatv2/ChatInput";
+import { BubbleSuggestion } from "./BubbleSuggestion";
 
 const chatApi = async (params: ChatApiRequest): Promise<ChatApiResponse> => {
   const response = await axios.post("https://agentic.aiweaver.ai/chat", params);
@@ -31,13 +34,13 @@ const generateReportApi = async (
   return response.data;
 };
 
-interface ChatMainProps {
+interface ChatVoiceProps {
   session: ChatSession;
   onApiSessionIdChange: (sessionId: string) => void;
   onMessagesChange: (messages: Message[]) => void;
 }
 
-export const ChatMain: React.FC<ChatMainProps> = ({ 
+export const ChatVoice: React.FC<ChatVoiceProps> = ({ 
   session,
   onApiSessionIdChange,
   onMessagesChange
@@ -368,19 +371,7 @@ const [filterParams, setFilterParams] = useState({
   return (
     <div className="h-full flex flex-col">
       {/* Parameter Form */}
-      {showParameterForm && apiSessionId && (
-        <div className="flex-shrink-0">
-          <ParameterForm
-            sessionId={apiSessionId}
-            onParametersSubmit={handleParametersSubmit}
-            disabled={
-              chatMutation.isPending ||
-              reportGenerationMutation.isPending ||
-              parametersSubmitted
-            }
-          />
-        </div>
-      )}
+    
 
       {/* Messages Area - Scrollable */}
       <div className="flex-1 overflow-y-auto bg-white min-h-0">
@@ -470,6 +461,15 @@ const [filterParams, setFilterParams] = useState({
           </div>
         )}
       </div>
+<BubbleSuggestion
+            sessionId={apiSessionId}
+            onParametersSubmit={handleParametersSubmit}
+            disabled={
+              chatMutation.isPending ||
+              reportGenerationMutation.isPending ||
+              parametersSubmitted
+            }
+          />
 
       {/* Chat Input - Sticky at bottom */}
       <div className="flex-shrink-0 bg-white border-t border-gray-200 px-2 py-2">

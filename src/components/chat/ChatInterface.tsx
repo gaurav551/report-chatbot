@@ -4,8 +4,8 @@ import axios from "axios";
 import { ChatApiRequest, ChatApiResponse, ChatSession, Message } from "../../interfaces/Message";
 import { Bot, MessageCircle } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
-import { ChatInput } from "./ChatInput";
 import { detectReportOutput } from "../../utils/detectReport";
+import { ChatInput } from "../chatv2/ChatInput";
 
 const chatApi = async (params: ChatApiRequest): Promise<ChatApiResponse> => {
   const response = await axios.post("https://agentic.aiweaver.ai/chat", params);
@@ -225,6 +225,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           onSendMessage={handleMessage} 
           disabled={chatMutation.isPending}
           placeholder="Type your message here..."
+        
         />
       </div>
     </div>
