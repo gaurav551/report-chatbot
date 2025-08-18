@@ -11,4 +11,6 @@ export interface ReportGenerationRequest {
   measures_requested_exp: string | null;
   dimension_filter_exp: string | null;
   measures_filter_exp: string | null;
+  measureFilters: Record<string, any> | null; // Add measureFilters as JSON object
+  dimensionFilters: Record<string, any> | null; // Add dimensionFilters as JSON object
 }

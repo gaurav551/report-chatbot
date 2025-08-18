@@ -34,13 +34,13 @@ const generateReportApi = async (
 interface ChatMainProps {
   session: ChatSession;
   onApiSessionIdChange: (sessionId: string) => void;
-  onMessagesChange: (messages: Message[]) => void; // Add this new prop
+  onMessagesChange: (messages: Message[]) => void;
 }
 
 export const ChatMain: React.FC<ChatMainProps> = ({ 
   session,
   onApiSessionIdChange,
-  onMessagesChange // Add this prop
+  onMessagesChange
 }) => {
   const advanceFilterRef = useRef(null) as any;
 
@@ -55,14 +55,16 @@ export const ChatMain: React.FC<ChatMainProps> = ({
   const [reportParams, setReportParams] = useState<ParameterFormData | null>(
     null
   );
-  const [filterParams, setFilterParams] = useState({
-    measures_requested_rev: null as string | null,
-    dimension_filter_rev: null as string | null,
-    measures_filter_rev: null as string | null,
-    measures_requested_exp: null as string | null,
-    dimension_filter_exp: null as string | null,
-    measures_filter_exp: null as string | null,
-  });
+const [filterParams, setFilterParams] = useState({
+  measures_requested_rev: null as string | null,
+  dimension_filter_rev: null as string | null,
+  measures_filter_rev: null as string | null,
+  measures_requested_exp: null as string | null,
+  dimension_filter_exp: null as string | null,
+  measures_filter_exp: null as string | null,
+  measureFilters: null as Record<string, any> | null,
+  dimensionFilters: null as Record<string, any> | null,
+});
 
   const [showParameterForm, setShowParameterForm] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -236,13 +238,15 @@ export const ChatMain: React.FC<ChatMainProps> = ({
     setParametersSubmitted(false);
     setReportParams(null);
     setFilterParams({
-      measures_requested_rev: null,
-      dimension_filter_rev: null,
-      measures_filter_rev: null,
-      measures_requested_exp: null,
-      dimension_filter_exp: null,
-      measures_filter_exp: null,
-    });
+  measures_requested_rev: null,
+  dimension_filter_rev: null,
+  measures_filter_rev: null,
+  measures_requested_exp: null,
+  dimension_filter_exp: null,
+  measures_filter_exp: null,
+  measureFilters: null,
+  dimensionFilters: null,
+});
 
     // Initialize chat with API
     const timer = setTimeout(() => {
@@ -259,10 +263,8 @@ export const ChatMain: React.FC<ChatMainProps> = ({
 
   const clearChat = () => {
     setMessages([]);
-   
     setChatCleared(true);
     setInitError("");
-    
   };
 
   const handleParametersSubmit = async (params: ParameterFormData) => {
@@ -275,83 +277,87 @@ export const ChatMain: React.FC<ChatMainProps> = ({
   };
 
   const generateReport = async (
-    params: ParameterFormData,
-    filters: typeof filterParams
-  ) => {
-    if (!apiSessionId) {
-      console.error("No session ID available");
-      addBotMessage(
-        "Error: No session ID available. Please refresh and try again."
-      );
-      return;
-    }
-    console.log(
-      "Generating report with parameters:",
-      params,
-      "and filters:",
-      filters
+  params: ParameterFormData,
+  filters: typeof filterParams
+) => {
+  if (!apiSessionId) {
+    console.error("No session ID available");
+    addBotMessage(
+      "Error: No session ID available. Please refresh and try again."
     );
+    return;
+  }
+  console.log(
+    "Generating report with parameters:",
+    params,
+    "and filters:",
+    filters
+  );
 
-    const reportRequest: ReportGenerationRequest = {
-      budget_years: [params.budgetYear],
-      fund_codes: params.fundCodes,
-      dept_ids: params.departments,
-      sessionId: apiSessionId,
-      userId: session.userName,
-      report_name: "rpt2",
-      measures_requested_rev: filters.measures_requested_rev,
-      dimension_filter_rev: filters.dimension_filter_rev,
-      measures_filter_rev: filters.measures_filter_rev,
-      measures_requested_exp: filters.measures_requested_exp,
-      dimension_filter_exp: filters.dimension_filter_exp,
-      measures_filter_exp: filters.measures_filter_exp,
-    };
-
-    console.log("Generating report with:", reportRequest);
-
-    try {
-      await reportGenerationMutation.mutateAsync(reportRequest);
-    } catch (error) {
-      console.error("Error generating report:", error);
-    }
+  const reportRequest: ReportGenerationRequest = {
+    budget_years: [params.budgetYear],
+    fund_codes: params.fundCodes,
+    dept_ids: params.departments,
+    sessionId: apiSessionId,
+    userId: session.userName,
+    report_name: "rpt2",
+    measures_requested_rev: filters.measures_requested_rev,
+    dimension_filter_rev: filters.dimension_filter_rev,
+    measures_filter_rev: filters.measures_filter_rev,
+    measures_requested_exp: filters.measures_requested_exp,
+    dimension_filter_exp: filters.dimension_filter_exp,
+    measures_filter_exp: filters.measures_filter_exp,
+    measureFilters: filters.measureFilters,
+    dimensionFilters: filters.dimensionFilters,
   };
+
+  console.log("Generating report with:", reportRequest);
+
+  try {
+    await reportGenerationMutation.mutateAsync(reportRequest);
+  } catch (error) {
+    console.error("Error generating report:", error);
+  }
+};
 
   const addFilterMessage = (
-    dimensionFiltersExpQuery: any,
-    measureFilterExpQuery: any,
-    dimensionFiltersRevQuery: any,
-    measureFiltersRevQuery: any,
-    dimensionFilters: any,
-    measureFilters: any
-  ) => {
-    // Create a message with the filter data
-    const filterText = generateFilterMessage(dimensionFilters, measureFilters);
-    
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text: filterText,
-      type: "text",
-      isUser: true,
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, newMessage]);
-    
-    // Update filter parameters based on the filters received
-    const updatedFilters = {
-      measures_requested_rev: null,
-      dimension_filter_rev: dimensionFiltersRevQuery || null,
-      measures_filter_rev: measureFiltersRevQuery,
-      measures_requested_exp: null,
-      dimension_filter_exp: dimensionFiltersExpQuery,
-      measures_filter_exp: measureFilterExpQuery || null,
-    };
-    setFilterParams(updatedFilters);
-    
-    // If parameters have been submitted, regenerate the report with new filters
-    if (reportParams && parametersSubmitted) {
-      generateReport(reportParams, updatedFilters);
-    }
+  dimensionFiltersExpQuery: any,
+  measureFilterExpQuery: any,
+  dimensionFiltersRevQuery: any,
+  measureFiltersRevQuery: any,
+  dimensionFilters: any,
+  measureFilters: any
+) => {
+  // Create a message with the filter data
+  const filterText = generateFilterMessage(dimensionFilters, measureFilters);
+  
+  const newMessage: Message = {
+    id: Date.now().toString(),
+    text: filterText,
+    type: "text",
+    isUser: true,
+    timestamp: new Date(),
   };
+  setMessages((prev) => [...prev, newMessage]);
+  
+  // Update filter parameters with both string queries and JSON objects
+  const updatedFilters = {
+    measures_requested_rev: null,
+    dimension_filter_rev: dimensionFiltersRevQuery || null,
+    measures_filter_rev: measureFiltersRevQuery,
+    measures_requested_exp: null,
+    dimension_filter_exp: dimensionFiltersExpQuery,
+    measures_filter_exp: measureFilterExpQuery || null,
+    measureFilters: measureFilters || null,
+    dimensionFilters: dimensionFilters || null,
+  };
+  setFilterParams(updatedFilters);
+  
+  // If parameters have been submitted, regenerate the report with new filters
+  if (reportParams && parametersSubmitted) {
+    generateReport(reportParams, updatedFilters);
+  }
+};
 
   const handleMessage = async (messageText: string) => {
     if (advanceFilterRef.current) {
@@ -360,22 +366,24 @@ export const ChatMain: React.FC<ChatMainProps> = ({
   };
 
   return (
-    <>
+    <div className="h-full flex flex-col">
       {/* Parameter Form */}
       {showParameterForm && apiSessionId && (
-        <ParameterForm
-          sessionId={apiSessionId}
-          onParametersSubmit={handleParametersSubmit}
-          disabled={
-            chatMutation.isPending ||
-            reportGenerationMutation.isPending ||
-            parametersSubmitted
-          }
-        />
+        <div className="flex-shrink-0">
+          <ParameterForm
+            sessionId={apiSessionId}
+            onParametersSubmit={handleParametersSubmit}
+            disabled={
+              chatMutation.isPending ||
+              reportGenerationMutation.isPending ||
+              parametersSubmitted
+            }
+          />
+        </div>
       )}
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto bg-white">
+      {/* Messages Area - Scrollable */}
+      <div className="flex-1 overflow-y-auto bg-white min-h-0">
         {isInitializing ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center text-gray-500">
@@ -425,7 +433,7 @@ export const ChatMain: React.FC<ChatMainProps> = ({
           </div>
         ) : (
           <div className="px-3 py-4 space-y-4 max-w-none">
-            {/* Messages with improved styling */}
+            {/* Messages */}
             {messages.map((message) => (
               <div key={message.id} className="w-full">
                 <ChatMessage
@@ -450,7 +458,9 @@ export const ChatMain: React.FC<ChatMainProps> = ({
             <div ref={messagesEndRef} />
           </div>
         )}
-        {((messages.length > 0 && messages.some((msg) => msg.type === "report")) || chatCleared)  && (
+
+        {/* Advanced Filter - Inside scrollable area */}
+        {((messages.length > 0 && messages.some((msg) => msg.type === "report")) || chatCleared) && (
           <div className="px-2 pb-2">
             <AdvanceFilter
               ref={advanceFilterRef as any}
@@ -461,8 +471,8 @@ export const ChatMain: React.FC<ChatMainProps> = ({
         )}
       </div>
 
-      {/* Input */}
-      <div className="bg-white border-t border-gray-200 px-2 py-2">
+      {/* Chat Input - Sticky at bottom */}
+      <div className="flex-shrink-0 bg-white border-t border-gray-200 px-2 py-2">
         <ChatInput
           onSendMessage={handleMessage}
           disabled={
@@ -473,6 +483,6 @@ export const ChatMain: React.FC<ChatMainProps> = ({
           placeholder="Chat is disabled for now, please set report parameters from selection above"
         />
       </div>
-    </>
+    </div>
   );
 };

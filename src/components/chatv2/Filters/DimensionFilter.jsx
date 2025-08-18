@@ -41,6 +41,11 @@ const DimensionFieldFilter = ({ field, filter, onFilterChange, options, loading 
   // Check if range should be disabled for node field
   const isRangeDisabled = field === 'node';
 
+  // Filter out the "All" option for range selects (no longer needed since we removed manual ALL)
+  const getRangeOptions = () => {
+    return options; // No need to filter since we're not adding manual "ALL" anymore
+  };
+
   return (
     <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
       <div className="flex items-center justify-between mb-3">
@@ -71,7 +76,7 @@ const DimensionFieldFilter = ({ field, filter, onFilterChange, options, loading 
         <input
           type="text"
           placeholder="Enter search term..."
-          value={filter.containsValue}
+          value={filter.containsValue || ''}
           onChange={(e) => onFilterChange({ ...filter, containsValue: e.target.value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -80,47 +85,45 @@ const DimensionFieldFilter = ({ field, filter, onFilterChange, options, loading 
       {filter.type === 'range' && (
         <div className="flex space-x-1.5">
           <div className="flex-1">
-            {<ModernSelect
+            <ModernSelect
               value={filter.rangeFrom || ''}
               onChange={(value) => onFilterChange({ ...filter, rangeFrom: value })}
-              options={options}
+              options={getRangeOptions()}
               single={true}
               placeholder="From..."
               loading={loading}
-              showCodeLabel
-            />}
+              showCodeLabel={true}
+            />
           </div>
           <span className="text-gray-400 self-center text-sm">-</span>
           <div className="flex-1">
             <ModernSelect
               value={filter.rangeTo || ''}
               onChange={(value) => onFilterChange({ ...filter, rangeTo: value })}
-              options={options}
+              options={getRangeOptions()}
               single={true}
               placeholder="To..."
               loading={loading}
-              showCodeLabel
+              showCodeLabel={true}
             />
           </div>
         </div>
       )}
 
-      {(filter.type === 'single' || filter.type === 'multiple') && (
+      {filter.type === 'multiple' && (
         <ModernSelect
-          value={filter.type === 'single' ? (filter.values[0] || '') : (filter.values || [])}
+          value={filter.values || []}
           onChange={(value) => {
-            if (filter.type === 'single') {
-              onFilterChange({ ...filter, values: value ? [value] : [] });
-            } else {
-              onFilterChange({ ...filter, values: Array.isArray(value) ? value : [value] });
-            }
+            onFilterChange({ 
+              ...filter, 
+              values: Array.isArray(value) ? value : (value ? [value] : [])
+            });
           }}
           options={options}
-          single={filter.type === 'single'}
-          multiple={filter.type === 'multiple'}
+          multiple={true}
           placeholder={`Select ${field}...`}
           loading={loading}
-          showCodeLabel
+          showCodeLabel={true}
         />
       )}
     </div>
@@ -184,9 +187,9 @@ const DimensionFilter = ({
     return Object.values(filters).some(filter => 
       filter && filter.type !== 'all' && (
         (filter.values && filter.values.length > 0) ||
-        (filter.containsValue && filter.containsValue.trim() !== '') ||
-        (filter.rangeFrom && filter.rangeFrom.trim() !== '') ||
-        (filter.rangeTo && filter.rangeTo.trim() !== '')
+        (filter.containsValue && filter.containsValue && filter.containsValue.trim() !== '') ||
+        (filter.rangeFrom && filter.rangeFrom && filter.rangeFrom.trim() !== '') ||
+        (filter.rangeTo && filter.rangeTo && filter.rangeTo.trim() !== '')
       )
     );
   };
@@ -197,25 +200,34 @@ const DimensionFilter = ({
     const rawOptions = dimensionsData.dimensions[apiField] || [];
     
     // Transform the options to work with ModernSelect (expects 'code' and 'label' properties)
-   return rawOptions.map(option => ({
-  code: option.code,
-  label: option.label || option.name || option.description || option.code  // Use proper label
-}));
+    // Don't add manual "ALL" option since ModernSelect handles "Select All" internally
+    return rawOptions.map(option => ({
+      code: option.code,
+      label: option.label || option.name || option.description || option.code
+    }));
   };
 
   const generateDimensionCriteria = (fieldsToInclude) => {
     let criteria = '';
     Object.entries(filters).forEach(([field, filter]) => {
       // Only include fields that are in the specified fieldsToInclude array
-      if (!fieldsToInclude.includes(field) || filter.type === 'all') return;
+      if (!fieldsToInclude.includes(field)) return;
       
       // Use the mapped field names for SQL generation
       const mappedField = fieldMapping[field];
       
-      if (filter.type === 'single' && filter.values.length > 0) {
-        criteria += ` and a.${mappedField} = '${filter.values[0]}'`;
-      } else if (filter.type === 'multiple' && filter.values.length > 0) {
-        criteria += ` and a.${mappedField} in (${filter.values.map(v => `'${v}'`).join(',')})`;
+      if (filter.type === 'all') {
+        criteria += ` and a.${mappedField} = 'all'`;
+      } else if (filter.type === 'multiple' && filter.values && filter.values.length > 0) {
+        // Get all available options for this field
+        const availableOptions = getOptionsForField(field);
+        
+        // Check if all available options are selected (since ModernSelect handles "Select All" internally)
+        if (filter.values.length === availableOptions.length) {
+          criteria += ` and a.${mappedField} = 'All'`;
+        } else {
+          criteria += ` and a.${mappedField} in (${filter.values.map(v => `'${v}'`).join(',')})`;
+        }
       } else if (filter.type === 'contains' && filter.containsValue) {
         criteria += ` and a.${mappedField} like '%${filter.containsValue}%'`;
       } else if (filter.type === 'range' && filter.rangeFrom && filter.rangeTo) {

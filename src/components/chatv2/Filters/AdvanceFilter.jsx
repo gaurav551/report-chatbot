@@ -84,7 +84,7 @@ const AdvanceFilter = forwardRef(
                   onClick={toggleExpanded}
                 >
                   Full Report
-                  <div className="text-xs">Advance Analysis</div>
+                  <div className="text-xs">Advanced Analysis</div>
                 </label>
                 <div
                   className={`transition-transform duration-300 cursor-pointer ${

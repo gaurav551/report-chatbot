@@ -174,59 +174,65 @@ export const ParameterForm: React.FC<ParameterFormProps> = ({
     formData.departments.length > 0;
 
   return (
-    <div className="border-b p-1">
-      <div className="max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Report Selection */}
-          
+    <div className="w-full border-b p-2 bg-gray-50/50">
+      <div className="w-full">
+        {/* Form Grid - Full Width */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+          {/* Budget Year - Full Width in its column */}
+          <div className="w-full">
+            <CompactYearCarousel
+              onChange={handleBudgetYearChange}
+              value={formData.budgetYear}
+              disabled={disabled || loading.budgetYears}
+              years={availableData.budgetYears}
+            />
+          </div>
 
-          {/* Budget Year */}
-          <CompactYearCarousel
-            onChange={handleBudgetYearChange}
-            value={formData.budgetYear}
-            disabled={disabled || loading.budgetYears}
-            years={availableData.budgetYears}
-          />
+          {/* Fund Codes - Full Width in its column */}
+          <div className="w-full">
+            <MultiSelectDropdown
+              label="Fund Codes"
+              value={formData.fundCodes}
+              options={availableData.fundCodes}
+              loading={loading.fundCodes}
+              disabled={disabled || !formData.budgetYear}
+              placeholder={
+                !formData.budgetYear ? 'Select year first' : 'Select Fund Codes'
+              }
+              onChange={handleFundCodeChange}
+              showSelectAll={true}
+            />
+          </div>
 
-          {/* Fund Codes */}
-          <MultiSelectDropdown
-            label="Fund Codes"
-            value={formData.fundCodes}
-            options={availableData.fundCodes}
-            loading={loading.fundCodes}
-            disabled={disabled || !formData.budgetYear}
-            placeholder={
-              !formData.budgetYear ? 'Select year first' : 'Select Fund Codes'
-            }
-            onChange={handleFundCodeChange}
-            showSelectAll={true}
-          />
-
-          {/* Departments */}
-          <MultiSelectDropdown
-            label="Departments"
-            value={formData.departments}
-            options={availableData.departments}
-            loading={loading.departments}
-            disabled={disabled || !formData.departments}
-            placeholder={
-              formData.fundCodes.length === 0
-                ? 'Select fund codes first'
-                : 'Select Departments'
-            }
-            onChange={handleDepartmentChange}
-            showSelectAll={true}
-          />
+          {/* Departments - Full Width in its column */}
+          <div className="w-full">
+            <MultiSelectDropdown
+              label="Departments"
+              value={formData.departments}
+              options={availableData.departments}
+              loading={loading.departments}
+              disabled={disabled || !formData.departments}
+              placeholder={
+                formData.fundCodes.length === 0
+                  ? 'Select fund codes first'
+                  : 'Select Departments'
+              }
+              onChange={handleDepartmentChange}
+              showSelectAll={true}
+            />
+          </div>
         </div>
 
-        {/* Submit Button */}
-        <button
-          onClick={() => onParametersSubmit(formData)}
-          disabled={!isFormValid || disabled}
-          className="px-6 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors mt-4"
-        >
-          Generate Report
-        </button>
+        {/* Submit Button - Left aligned and compact */}
+        <div className="">
+          <button
+            onClick={() => onParametersSubmit(formData)}
+            disabled={!isFormValid || disabled}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          >
+            Generate Report
+          </button>
+        </div>
       </div>
     </div>
   );
