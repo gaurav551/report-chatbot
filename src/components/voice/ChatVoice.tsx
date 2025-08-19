@@ -18,6 +18,7 @@ import { ParameterForm, ParameterFormData } from "../chatv2/ParameterForm";
 import AdvanceFilter from "../chatv2/Filters/AdvanceFilter";
 import { ChatInput } from "../chatv2/ChatInput";
 import { BubbleSuggestion } from "./BubbleSuggestion";
+import { ServiceType } from "../../const/serviceType";
 
 const chatApi = async (params: ChatApiRequest): Promise<ChatApiResponse> => {
   const response = await axios.post("https://agentic.aiweaver.ai/chat", params);
@@ -480,6 +481,7 @@ const [filterParams, setFilterParams] = useState({
             reportGenerationMutation.isPending ||
             reportParams === null 
           }
+          serviceType={ServiceType.VOICE}
           placeholder="Chat is disabled for now, please set report parameters from selection above"
         />
       </div>

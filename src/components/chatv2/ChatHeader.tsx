@@ -251,7 +251,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   >
                     <option value="Budgets-NLP" className="bg-blue-600 text-white">Budgets-NLP</option>
                     <option value="Budgets-PRO" className="bg-blue-600 text-white">Budgets-PRO</option>
-                    <option value="Budgets-Voice" className="bg-blue-600 text-white">Budgets-Voice</option>
+                    {/* <option value="Budgets-Voice" className="bg-blue-600 text-white">Budgets-Voice</option> */}
 
                   </select>
                   <button

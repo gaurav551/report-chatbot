@@ -15,6 +15,7 @@ import { detectReportOutput } from "../../utils/detectReport";
 import AdvanceFilter from "./Filters/AdvanceFilter";
 import { generateFilterMessage } from "../../utils/generateFIlterMessage";
 import { ReportGenerationRequest } from "../../interfaces/ReportGenerationRequest";
+import { ServiceType } from "../../const/serviceType";
 
 const chatApi = async (params: ChatApiRequest): Promise<ChatApiResponse> => {
   const response = await axios.post("https://agentic.aiweaver.ai/chat", params);
@@ -480,6 +481,7 @@ const [filterParams, setFilterParams] = useState({
             reportGenerationMutation.isPending ||
             reportParams === null 
           }
+          serviceType={ServiceType.PRO}
           placeholder="Chat is disabled for now, please set report parameters from selection above"
         />
       </div>

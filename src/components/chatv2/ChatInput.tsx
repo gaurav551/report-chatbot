@@ -1,5 +1,6 @@
 import { Send, Mic, MicOff } from "lucide-react";
 import { useState, forwardRef, useEffect, useRef } from "react";
+import { ServiceType } from "../../const/serviceType";
 
 export const ChatInput = forwardRef<HTMLInputElement, {
   onSendMessage: (message: string) => void;
@@ -7,7 +8,8 @@ export const ChatInput = forwardRef<HTMLInputElement, {
   placeholder?: string;
   voicePrompt?: string;
   isVoiceEnabled?: boolean;
-}>(({ onSendMessage, disabled, placeholder = "Type your message...", voicePrompt, isVoiceEnabled = false }, ref) => {
+  serviceType? : ServiceType
+}>(({ onSendMessage, disabled, placeholder = "Type your message...", voicePrompt, isVoiceEnabled = false, serviceType=ServiceType.NLP }, ref) => {
   const [message, setMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
@@ -57,7 +59,7 @@ export const ChatInput = forwardRef<HTMLInputElement, {
   }, [voicePrompt]);
 
   const handleSubmit = () => {
-    if (!disabled && message.trim()) {
+   
       onSendMessage(message.trim());
       setMessage('');
       // Refocus the input after sending message
@@ -66,7 +68,7 @@ export const ChatInput = forwardRef<HTMLInputElement, {
           inputRef.current?.focus();
         }, 0);
       }
-    }
+    
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -102,7 +104,7 @@ export const ChatInput = forwardRef<HTMLInputElement, {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
-          disabled={disabled}
+          disabled={serviceType==ServiceType.PRO? true : disabled}
           autoFocus
           className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-100"
           placeholder={isListening ? "Listening..." : placeholder}
@@ -124,7 +126,7 @@ export const ChatInput = forwardRef<HTMLInputElement, {
       </div>
       <button
         onClick={handleSubmit}
-        disabled={disabled || !message.trim()}
+        disabled={disabled || (serviceType !== ServiceType.PRO && !message.trim())}
         className="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
       >
         <Send className="w-5 h-5" />

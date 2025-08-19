@@ -9,6 +9,7 @@ export interface Message {
 
 export interface ChatSession {
   userName: string;
+  userId : string;
   year?: string;
   fundCode?: string;
   departmentId?: string;
