@@ -34,10 +34,7 @@ const Summary = ({ isVisible, onToggle, userName, sessionId }) => {
     queryKey: ['summaryData', userName, sessionId],
     queryFn: () => fetchSummaryData(summaryUrl),
     enabled: isVisible && !!userName && !!sessionId,
-
   });
-
-  if (!isVisible) return null;
 
   // Generate summary text
   const getSummaryText = () => {
@@ -60,52 +57,61 @@ const Summary = ({ isVisible, onToggle, userName, sessionId }) => {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-      {/* Header */}
+      {/* Header - Always visible */}
       <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <FileText className="w-5 h-5" />
             <h2 className="text-lg font-semibold">Report Summary</h2>
           </div>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 hover:bg-green-700 rounded transition-colors"
-          >
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className={`transition-all duration-300 ease-in-out ${
-        isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-      } overflow-hidden`}>
-        <div className="p-4">
-          {isLoading && (
-            <div className="flex items-center justify-center py-6">
-              <Loader2 className="w-5 h-5 animate-spin text-green-600 mr-2" />
-              <span className="text-gray-600">Loading...</span>
-            </div>
-          )}
-
-          {error && (
-                  <div className="h-96 bg-white border border-gray-200 rounded-lg shadow-sm flex items-center justify-center">
-        <div className="flex items-center space-x-2 text-red-600">
-          <AlertCircle className="w-6 h-6" />
-          <span>Error loading data: {error.message}</span>
-        </div>
-      </div>
+          
+          <div className="flex items-center space-x-2">
+            {/* Content Expand/Collapse Button - Only show when isVisible */}
             
-          )}
-
-          {summaryText && (
-            <div className="text-sm text-gray-700 leading-relaxed space-y-3">
-              <p>{summaryText.sentence1}</p>
-              <p>{summaryText.sentence2}</p>
-            </div>
-          )}
+            
+            {/* View Toggle Button */}
+            <button
+              onClick={onToggle}
+              className="p-1.5 bg-white/20 hover:bg-green-700 rounded-lg transition-colors"
+              title={isVisible ? "Minimize Summary" : "Show Summary"}
+            >
+              {isVisible ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Content - Only show when isVisible is true */}
+      {isVisible && (
+        <div className={`transition-all duration-300 ease-in-out ${
+          isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+        } overflow-hidden`}>
+          <div className="p-4">
+            {isLoading && (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="w-5 h-5 animate-spin text-green-600 mr-2" />
+                <span className="text-gray-600">Loading...</span>
+              </div>
+            )}
+
+            {error && (
+              <div className="h-96 bg-white border border-gray-200 rounded-lg shadow-sm flex items-center justify-center">
+                <div className="flex items-center space-x-2 text-red-600">
+                  <AlertCircle className="w-6 h-6" />
+                  <span>Error loading data: {error.message}</span>
+                </div>
+              </div>
+            )}
+
+            {summaryText && (
+              <div className="text-sm text-gray-700 leading-relaxed space-y-3">
+                <p>{summaryText.sentence1}</p>
+                <p>{summaryText.sentence2}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

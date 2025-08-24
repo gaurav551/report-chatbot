@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Bot, RotateCcw, MessageCircle, FileText, BarChart3 } from "lucide-react";
+import { Bot, RotateCcw, MessageCircle, FileText, BarChart3, PanelLeftOpen, PanelRightOpen, Columns3 } from "lucide-react";
 import { ChatSession, Message } from "../../interfaces/Message";
 import Summary from "../ui/Summary";
 import { ChatMain } from "./ChatMain";
 import Chart from "../ui/Chart";
 import { ChatInterface } from "../chat/ChatInterface";
 import { ChatVoice } from "../voice/ChatVoice";
+import DraggableButton from "../ui/DraggableButton";
 
 interface ChatHeaderProps {
   session: ChatSession;
@@ -57,12 +58,19 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const [reportCount, setReportCount] = useState<number>(0);
 
   // Panel widths with smoother defaults
-  const [leftPanelWidth, setLeftPanelWidth] = useState(28);
-  const [rightPanelWidth, setRightPanelWidth] = useState(28);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(20); // Minimum width
+  const [rightPanelWidth, setRightPanelWidth] = useState(20); // Minimum width
+  const [chatFixedWidth, setChatFixedWidth] = useState(80); // Fixed width as percentage
+  const [chatResizable, setChatResizable] = useState(false); // Whether chat can be resized
   
   const containerRef = React.useRef<HTMLDivElement>(null);
   const isResizingRef = React.useRef<'left' | 'right' | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
+
+  // Master toggle button horizontal drag state
+  const [masterToggleX, setMasterToggleX] = useState(50); // Start at 50% (center)
+  const [isMasterToggleDragging, setIsMasterToggleDragging] = useState(false);
+  const [masterToggleDragStart, setMasterToggleDragStart] = useState({ x: 0, startX: 0 });
 
   // Check if there are any report messages
   const hasReportMessages = messages.some(message => message.type === "report");
@@ -89,6 +97,47 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       setMessages(newMessages);
     }
   };
+
+  // Master toggle button drag handlers
+  const handleMasterToggleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (e.detail === 1) { // Single click
+      setIsMasterToggleDragging(true);
+      setMasterToggleDragStart({
+        x: e.clientX,
+        startX: masterToggleX
+      });
+      document.body.style.cursor = 'grabbing';
+      document.body.style.userSelect = 'none';
+    }
+  };
+
+  const handleMasterToggleMouseMove = React.useCallback((e: MouseEvent) => {
+    if (!isMasterToggleDragging) return;
+    
+    const windowWidth = window.innerWidth;
+    const deltaX = e.clientX - masterToggleDragStart.x;
+    const deltaXPercent = (deltaX / windowWidth) * 100;
+    const newX = Math.max(10, Math.min(90, masterToggleDragStart.startX + deltaXPercent));
+    
+    setMasterToggleX(newX);
+  }, [isMasterToggleDragging, masterToggleDragStart]);
+
+  const handleMasterToggleMouseUp = React.useCallback((e: MouseEvent) => {
+    if (isMasterToggleDragging) {
+      setIsMasterToggleDragging(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      
+      // Check if this was a click (minimal movement) rather than a drag
+      const deltaX = Math.abs(e.clientX - masterToggleDragStart.x);
+      if (deltaX < 5) { // Less than 5px movement = click
+        toggleBothSidebars();
+      }
+    }
+  }, [isMasterToggleDragging, masterToggleDragStart]);
 
   const handleMouseMove = React.useCallback((e: MouseEvent) => {
     if (!containerRef.current || !isResizingRef.current) return;
@@ -139,28 +188,72 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       if (isDragging) {
         requestAnimationFrame(() => handleMouseMove(e));
       }
+      if (isMasterToggleDragging) {
+        requestAnimationFrame(() => handleMasterToggleMouseMove(e));
+      }
+    };
+
+    const handleMouseUpCombined = (e: MouseEvent) => {
+      handleMouseUp();
+      handleMasterToggleMouseUp(e);
     };
 
     document.addEventListener('mousemove', throttledMouseMove, { passive: true });
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mouseup', handleMouseUpCombined);
     
     return () => {
       document.removeEventListener('mousemove', throttledMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mouseup', handleMouseUpCombined);
     };
-  }, [handleMouseMove, handleMouseUp, isDragging]);
+  }, [handleMouseMove, handleMouseUp, handleMasterToggleMouseMove, handleMasterToggleMouseUp, isDragging, isMasterToggleDragging]);
 
-  // Calculate middle panel width with smooth transitions
-  const middlePanelWidth = 100 - 
-    (leftSidebarVisible && hasReportMessages ? leftPanelWidth : 0) - 
-    (rightSidebarVisible && hasReportMessages ? rightPanelWidth : 0);
+  // Calculate middle panel width with fixed width behavior
+  const calculateChatWidth = () => {
+    const bothSidebarsHidden = (!leftSidebarVisible || !hasReportMessages) && (!rightSidebarVisible || !hasReportMessages);
+    
+    // Always use 80% width when both sidebars are hidden
+    if (bothSidebarsHidden) {
+      return { width: `${chatFixedWidth}%`, flexGrow: 0, flexShrink: 0 };
+    }
+    
+    // When sidebars are visible, calculate remaining space
+    const containerWidth = window.innerWidth;
+    const leftPixels = leftSidebarVisible && hasReportMessages ? (containerWidth * leftPanelWidth / 100) : 0;
+    const rightPixels = rightSidebarVisible && hasReportMessages ? (containerWidth * rightPanelWidth / 100) : 0;
+    const remainingWidth = containerWidth - leftPixels - rightPixels - 32; // 32px for margins
+    
+    return { width: `${remainingWidth}px`, flexGrow: 1, flexShrink: 1 };
+  };
 
   const toggleLeftSidebar = () => {
-    setLeftSidebarVisible(!leftSidebarVisible);
+    const newVisible = !leftSidebarVisible;
+    setLeftSidebarVisible(newVisible);
+    
+    // Enable chat resizing after first sidebar opens
+    if (newVisible && !chatResizable) {
+      setChatResizable(true);
+    }
   };
 
   const toggleRightSidebar = () => {
-    setRightSidebarVisible(!rightSidebarVisible);
+    const newVisible = !rightSidebarVisible;
+    setRightSidebarVisible(newVisible);
+    
+    // Enable chat resizing after first sidebar opens
+    if (newVisible && !chatResizable) {
+      setChatResizable(true);
+    }
+  };
+
+  const toggleBothSidebars = () => {
+    const shouldOpen = !leftSidebarVisible && !rightSidebarVisible;
+    setLeftSidebarVisible(shouldOpen);
+    setRightSidebarVisible(shouldOpen);
+    
+    // Enable chat resizing when opening sidebars
+    if (shouldOpen) {
+      setChatResizable(true);
+    }
   };
 
   return (
@@ -172,24 +265,66 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         }`}
       >
         
-        {/* Left Sidebar Toggle Button */}
+        {/* Horizontally Draggable Master Toggle Button for Both Sidebars */}
         {hasReportMessages && (
-          <div className="fixed left-4 top-1/2 transform -translate-y-1/2 z-30">
+          <div 
+            className="fixed top-4 z-30 transition-all duration-200"
+            style={{ 
+              left: `${masterToggleX}%`, 
+              transform: 'translateX(-50%)'
+            }}
+          >
             <button
-              onClick={toggleLeftSidebar}
+              onMouseDown={handleMasterToggleMouseDown}
               className={`
                 text-white p-3 rounded-full shadow-lg transition-all duration-300 
-                transform hover:scale-110 active:scale-95
-                ${leftSidebarVisible 
-                  ? 'bg-green-600 hover:bg-green-700 shadow-green-500/25' 
-                  : 'bg-gray-500 hover:bg-green-600 shadow-gray-500/25'
+                transform hover:scale-110 active:scale-95 relative
+                ${isMasterToggleDragging ? 'cursor-grabbing scale-110' : 'cursor-grab'}
+                ${(leftSidebarVisible || rightSidebarVisible)
+                  ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/25' 
+                  : 'bg-gray-500 hover:bg-indigo-600 shadow-gray-500/25'
                 }
               `}
-              title="Toggle Summary"
+              title="Toggle Both Panels (Drag to move horizontally)"
             >
-              <FileText className="w-5 h-5" />
+              <Columns3 className="w-5 h-5" />
+              
+              {/* Drag indicator */}
+              <div className={`
+                absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white 
+                transition-all duration-200
+                ${isMasterToggleDragging ? 'bg-yellow-400 opacity-100' : 'bg-white/30 opacity-0 hover:opacity-100'}
+              `}>
+                <div className="w-full h-full rounded-full bg-white/50" />
+              </div>
             </button>
+            
+            {/* Horizontal movement guidelines */}
+            {isMasterToggleDragging && (
+              <>
+                <div className="fixed top-0 bottom-0 w-0.5 bg-white/20 pointer-events-none" style={{ left: '10%' }} />
+                <div className="fixed top-0 bottom-0 w-0.5 bg-white/20 pointer-events-none" style={{ left: '50%' }} />
+                <div className="fixed top-0 bottom-0 w-0.5 bg-white/20 pointer-events-none" style={{ left: '90%' }} />
+              </>
+            )}
           </div>
+        )}
+
+        {/* Draggable Left Sidebar Toggle Button */}
+        {hasReportMessages && !leftSidebarVisible && (
+          <DraggableButton
+            onClick={toggleLeftSidebar}
+            className={
+              leftSidebarVisible 
+                ? 'bg-green-600 hover:bg-green-700 shadow-green-500/25' 
+                : 'bg-gray-500 hover:bg-green-600 shadow-gray-500/25'
+            }
+            title="Toggle Summary"
+            isActive={leftSidebarVisible}
+            side="left"
+          >
+            <FileText className="w-5 h-5" />
+          </DraggableButton>
         )}
 
         {/* Left Sidebar - Summary Component */}
@@ -220,12 +355,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
         {/* Main Chat Area */}
         <div 
-          className={`flex justify-center min-w-0 transition-all duration-300 ease-out h-full ${
+          className={`flex justify-center min-w-0 transition-all duration-300 ease-out h-full mx-auto ${
             (!leftSidebarVisible || !hasReportMessages) && (!rightSidebarVisible || !hasReportMessages) 
-              ? 'px-8' // Add margin when both sidebars are hidden
+              ? 'px-4' // Minimal padding when centered
               : 'px-2' // Original margin when sidebars are visible
           }`}
-          style={{ width: `${middlePanelWidth}%` }}
+          style={calculateChatWidth()}
         >
           <div className="w-full bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col h-full">
             
@@ -251,7 +386,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   >
                     <option value="Budgets-NLP" className="bg-blue-600 text-white">Budgets-NLP</option>
                     <option value="Budgets-PRO" className="bg-blue-600 text-white">Budgets-PRO</option>
-                    {/* <option value="Budgets-Voice" className="bg-blue-600 text-white">Budgets-Voice</option> */}
+                    <option value="Budgets-Voice" className="bg-blue-600 text-white">Budgets-Voice</option>
 
                   </select>
                   <button
@@ -325,24 +460,21 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </>
         )}
 
-        {/* Right Sidebar Toggle Button */}
-        {hasReportMessages && (
-          <div className="fixed right-4 top-1/2 transform -translate-y-1/2 z-30">
-            <button
-              onClick={toggleRightSidebar}
-              className={`
-                text-white p-3 rounded-full shadow-lg transition-all duration-300 
-                transform hover:scale-110 active:scale-95
-                ${rightSidebarVisible 
-                  ? 'bg-purple-600 hover:bg-purple-700 shadow-purple-500/25' 
-                  : 'bg-gray-500 hover:bg-purple-600 shadow-gray-500/25'
-                }
-              `}
-              title="Toggle Analytics"
-            >
-              <BarChart3 className="w-5 h-5" />
-            </button>
-          </div>
+        {/* Draggable Right Sidebar Toggle Button */}
+        {hasReportMessages && !rightSidebarVisible && (
+          <DraggableButton
+            onClick={toggleRightSidebar}
+            className={
+              rightSidebarVisible 
+                ? 'bg-purple-600 hover:bg-purple-700 shadow-purple-500/25' 
+                : 'bg-gray-500 hover:bg-purple-600 shadow-gray-500/25'
+            }
+            title="Toggle Analytics"
+            isActive={rightSidebarVisible}
+            side="right"
+          >
+            <BarChart3 className="w-5 h-5" />
+          </DraggableButton>
         )}
         
         {/* Drag overlay for smoother interactions - No blur */}

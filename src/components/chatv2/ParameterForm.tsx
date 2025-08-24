@@ -228,7 +228,7 @@ export const ParameterForm: React.FC<ParameterFormProps> = ({
           <button
             onClick={() => onParametersSubmit(formData)}
             disabled={!isFormValid || disabled}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="px-1.5 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
             Generate Report
           </button>

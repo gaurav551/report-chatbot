@@ -120,7 +120,7 @@ export const ChatInput = forwardRef<HTMLInputElement, {
             } disabled:opacity-50 disabled:cursor-not-allowed`}
             title={isListening ? "Stop listening" : "Start voice input"}
           >
-            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            {isListening ? <Mic className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
           </button>
         )}
       </div>

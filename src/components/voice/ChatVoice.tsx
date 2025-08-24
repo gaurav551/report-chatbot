@@ -473,18 +473,7 @@ const [filterParams, setFilterParams] = useState({
           />
 
       {/* Chat Input - Sticky at bottom */}
-      <div className="flex-shrink-0 bg-white border-t border-gray-200 px-2 py-2">
-        <ChatInput
-          onSendMessage={handleMessage}
-          disabled={
-            chatMutation.isPending ||
-            reportGenerationMutation.isPending ||
-            reportParams === null 
-          }
-          serviceType={ServiceType.VOICE}
-          placeholder="Chat is disabled for now, please set report parameters from selection above"
-        />
-      </div>
+      
     </div>
   );
 };

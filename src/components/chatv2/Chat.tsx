@@ -100,7 +100,8 @@ const ChatV2: React.FC = () => {
         return <div className="min-h-screen flex items-center justify-center">
           <div className="text-center text-red-600">
             <p className="text-xl mb-2">❌ Authentication Failed</p>
-            <p>{errorMessage}</p>
+            <p>Please contact us at info@aiweaver.ai.</p>
+          
           </div>
         </div>;
       }

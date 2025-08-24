@@ -59,7 +59,14 @@ const AdvanceFilter = forwardRef(
 
     const toggleExpanded = (e) => {
       e.stopPropagation(); // Prevent event bubbling
+      //scroll a little down
       setIsExpanded(!isExpanded);
+      setTimeout(() => {
+    e.target.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'start' 
+    });
+  }, 100); // Small delay to ensure DOM updates
     };
 
     return (

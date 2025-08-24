@@ -132,10 +132,12 @@ const MeasureFilter = ({
 
   const operators = [
     { value: '=', label: 'Equals (=)' },
+     { value: '>=', label: 'Between (>=)' },
+         { value: '<=', label: 'Less than or equal (<=)' },
+
     { value: '>', label: 'Between (>)' },
     { value: '<', label: 'Less than (<)' },
-    { value: '>=', label: 'Between (>=)' },
-    { value: '<=', label: 'Less than or equal (<=)' }
+   
   ];
 
   const updateFilter = (field, filterData) => {
