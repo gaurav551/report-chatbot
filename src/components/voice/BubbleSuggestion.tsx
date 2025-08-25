@@ -36,7 +36,9 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
   }>({ years: [], fundCodes: [], departments: [] });
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [voiceFeedback, setVoiceFeedback] = useState<string>('');
   const recognitionRef = useRef<any>(null);
+  const feedbackTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Voice recognition setup
   useEffect(() => {
@@ -46,15 +48,51 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
       recognitionRef.current.lang = 'en-US';
+      
+      recognitionRef.current.onstart = () => {
+        setIsListening(true);
+        setVoiceFeedback('Listening...');
+      };
+      
       recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript.toLowerCase().trim();
+        let transcript = event.results[0][0].transcript.toLowerCase().trim();
+        // Remove trailing periods/dots
+        transcript = transcript.replace(/\.+$/, '');
         handleVoiceCommand(transcript);
         setIsListening(false);
       };
-      recognitionRef.current.onerror = () => setIsListening(false);
-      recognitionRef.current.onend = () => setIsListening(false);
+      
+      recognitionRef.current.onerror = (event: any) => {
+        setIsListening(false);
+        setVoiceFeedback(`Voice error: ${event.error}`);
+        clearFeedbackAfterDelay();
+      };
+      
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
     }
+    
+    return () => {
+      if (feedbackTimeoutRef.current) {
+        clearTimeout(feedbackTimeoutRef.current);
+      }
+    };
   }, []);
+
+  const clearFeedbackAfterDelay = () => {
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+    }
+    feedbackTimeoutRef.current = setTimeout(() => {
+      setVoiceFeedback('');
+    }, 3000);
+  };
+
+  const showVoiceFeedback = (message: string) => {
+    setVoiceFeedback(message);
+    clearFeedbackAfterDelay();
+  };
 
   // Load initial data
   useEffect(() => {
@@ -65,23 +103,178 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
   }, []);
 
   const handleVoiceCommand = (transcript: string) => {
-    if (transcript.includes('all')) {
+    console.log('Voice command received:', transcript);
+    console.log('Current step:', currentStep);
+    console.log('Available options:', availableOptions);
+
+    // Handle "select all" or "all" commands
+    if (transcript.includes('select all') || transcript.includes('all')) {
       handleSelectAll();
+      showVoiceFeedback('Selected all items');
       return;
     }
 
-    const options = currentStep === 'year' ? availableOptions.years.map(y => [y, y]) :
-                   currentStep === 'funds' ? availableOptions.fundCodes :
-                   availableOptions.departments;
-    
-    const matches = options.filter(([value, label]) => 
-      transcript.includes(value.toLowerCase()) || transcript.includes(label.toLowerCase())
-    );
-    
-    if (matches.length > 0) {
-      if (currentStep === 'year') setFormData(prev => ({ ...prev, budgetYear: matches[0][0] }));
-      else if (currentStep === 'funds') matches.forEach(([value]) => handleFundSelect(value));
-      else matches.forEach(([value]) => handleDepartmentSelect(value));
+    // Handle "next" command
+    if (transcript.includes('next') && canProceedToNext()) {
+      handleNext();
+      showVoiceFeedback('Moving to next step');
+      return;
+    }
+
+    // Handle "clear" or "reset" commands
+    if (transcript.includes('clear') || transcript.includes('reset')) {
+      if (currentStep === 'funds') {
+        setFormData(prev => ({ ...prev, fundCodes: [] }));
+        showVoiceFeedback('Cleared fund codes');
+      } else if (currentStep === 'departments') {
+        setFormData(prev => ({ ...prev, departments: [] }));
+        showVoiceFeedback('Cleared departments');
+      }
+      return;
+    }
+
+    let matches = [];
+    let matchFound = false;
+
+    if (currentStep === 'year') {
+      console.log('Searching years:', availableOptions.years);
+      
+      matches = availableOptions.years.filter(year => {
+        const yearStr = year.toLowerCase();
+        const transcriptWords = transcript.split(' ');
+        
+        // Direct matches
+        if (transcript === yearStr || transcript.includes(yearStr) || yearStr.includes(transcript)) {
+          console.log(`Year match found: ${year} (direct match)`);
+          return true;
+        }
+        
+        // Handle spoken numbers
+        if (transcript.includes('twenty twenty four') || transcript.includes('2024')) {
+          if (yearStr.includes('2024')) {
+            console.log(`Year match found: ${year} (2024 match)`);
+            return true;
+          }
+        }
+        if (transcript.includes('twenty twenty three') || transcript.includes('2023')) {
+          if (yearStr.includes('2023')) {
+            console.log(`Year match found: ${year} (2023 match)`);
+            return true;
+          }
+        }
+        if (transcript.includes('twenty twenty five') || transcript.includes('2025')) {
+          if (yearStr.includes('2025')) {
+            console.log(`Year match found: ${year} (2025 match)`);
+            return true;
+          }
+        }
+        
+        // Extract numbers from transcript
+        const transcriptNumbers = transcript.match(/\d+/g);
+        if (transcriptNumbers) {
+          for (let num of transcriptNumbers) {
+            if (yearStr.includes(num)) {
+              console.log(`Year match found: ${year} (number match: ${num})`);
+              return true;
+            }
+          }
+        }
+        
+        return false;
+      });
+      
+      if (matches.length > 0) {
+        handleYearSelect(matches[0]);
+        showVoiceFeedback(`Selected year: ${matches[0]}`);
+        matchFound = true;
+      }
+    } else if (currentStep === 'funds') {
+      console.log('Searching fund codes:', availableOptions.fundCodes.length);
+      
+      matches = availableOptions.fundCodes.filter(([value, label]) => {
+        const valueStr = value.toLowerCase();
+        const labelStr = label.toLowerCase();
+        
+        console.log(`Checking fund: ${value} - ${label}`);
+        
+        // Simple contains check first
+        if (transcript.includes(valueStr) || transcript.includes(labelStr)) {
+          console.log(`Fund match found: ${label} (contains match)`);
+          return true;
+        }
+        
+        // Check if any word in the transcript matches any word in the label
+        const transcriptWords = transcript.split(' ').filter(word => word.length > 2);
+        const labelWords = labelStr.split(' ').filter(word => word.length > 2);
+        
+        for (let transcriptWord of transcriptWords) {
+          for (let labelWord of labelWords) {
+            if (transcriptWord.includes(labelWord) || labelWord.includes(transcriptWord)) {
+              console.log(`Fund match found: ${label} (word match: ${transcriptWord} <-> ${labelWord})`);
+              return true;
+            }
+          }
+        }
+        
+        return false;
+      });
+      
+      if (matches.length > 0) {
+        matches.forEach(([value, label]) => {
+          handleFundSelect(value);
+          console.log(`Selected fund: ${label}`);
+        });
+        showVoiceFeedback(`Selected ${matches.length} fund code(s): ${matches.map(([,label]) => label).join(', ')}`);
+        matchFound = true;
+      }
+    } else if (currentStep === 'departments') {
+      console.log('Searching departments:', availableOptions.departments.length);
+      
+      matches = availableOptions.departments.filter(([value, label]) => {
+        const valueStr = value.toLowerCase();
+        const labelStr = label.toLowerCase();
+        
+        console.log(`Checking department: ${value} - ${label}`);
+        
+        // Simple contains check first
+        if (transcript.includes(valueStr) || transcript.includes(labelStr)) {
+          console.log(`Department match found: ${label} (contains match)`);
+          return true;
+        }
+        
+        // Check if any word in the transcript matches any word in the label
+        const transcriptWords = transcript.split(' ').filter(word => word.length > 2);
+        const labelWords = labelStr.split(' ').filter(word => word.length > 2);
+        
+        for (let transcriptWord of transcriptWords) {
+          for (let labelWord of labelWords) {
+            if (transcriptWord.includes(labelWord) || labelWord.includes(transcriptWord)) {
+              console.log(`Department match found: ${label} (word match: ${transcriptWord} <-> ${labelWord})`);
+              return true;
+            }
+          }
+        }
+        
+        return false;
+      });
+      
+      if (matches.length > 0) {
+        matches.forEach(([value, label]) => {
+          handleDepartmentSelect(value);
+          console.log(`Selected department: ${label}`);
+        });
+        showVoiceFeedback(`Selected ${matches.length} department(s): ${matches.map(([,label]) => label).join(', ')}`);
+        matchFound = true;
+      }
+    }
+
+    if (!matchFound) {
+      console.log('No matches found for transcript:', transcript);
+      showVoiceFeedback(`No matches found for "${transcript}". Available options: ${
+        currentStep === 'year' ? availableOptions.years.join(', ') :
+        currentStep === 'funds' ? availableOptions.fundCodes.map(([,label]) => label).slice(0, 3).join(', ') + '...' :
+        availableOptions.departments.map(([,label]) => label).slice(0, 3).join(', ') + '...'
+      }`);
     }
   };
 
@@ -160,6 +353,17 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
     else if (step === 'departments') setFormData(prev => ({ ...prev, departments: [] }));
   };
 
+  const toggleVoiceRecognition = () => {
+    if (!recognitionRef.current) return;
+    
+    if (isListening) {
+      recognitionRef.current.stop();
+      setVoiceFeedback('');
+    } else {
+      recognitionRef.current.start();
+    }
+  };
+
   const renderSelectedItems = (items: string[], options: [string, string][], color: string, resetStep: Step) => {
     const getLabel = (value: string) => options.find(([val]) => val === value)?.[1] || value;
     const visible = items.slice(0, 3);
@@ -221,13 +425,30 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
         </div>
       </div>
 
+      {/* Voice Feedback */}
+      {voiceFeedback && (
+        <div className="px-2.5 py-1 bg-blue-50 border-b border-blue-100">
+          <div className="flex items-center gap-1.5 text-xs text-blue-700">
+            <Mic className="w-3 h-3" />
+            {voiceFeedback}
+          </div>
+        </div>
+      )}
+
       {/* Options */}
       <div className="p-2.5">
-        <h4 className="text-sm font-medium text-gray-900 mb-1">
-          {currentStep === 'year' ? 'Select Budget Year' : 
-           currentStep === 'funds' ? 'Select Fund Codes' : 
-           currentStep === 'departments' ? 'Select Departments' : 'Ready to Generate'}
-        </h4>
+        <div className="flex items-center justify-between mb-1">
+          <h4 className="text-sm font-medium text-gray-900">
+            {currentStep === 'year' ? 'Select Budget Year' : 
+             currentStep === 'funds' ? 'Select Fund Codes' : 
+             currentStep === 'departments' ? 'Select Departments' : 'Ready to Generate'}
+          </h4>
+          {currentStep !== 'complete' && (
+            <div className="text-xs text-gray-500">
+              Voice commands: say names, "select all", "next", "clear"
+            </div>
+          )}
+        </div>
 
         {loading ? (
           <div className="flex items-center gap-2 py-3">
@@ -265,14 +486,12 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
                   <span className="font-medium">{label}</span>
                 </label>
               ))}
-
-             
             </div>
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
               <button
-                onClick={() => isListening ? recognitionRef.current?.stop() : recognitionRef.current?.start()}
+                onClick={toggleVoiceRecognition}
                 disabled={disabled || loading}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-medium transition-all ${
                   isListening ? 'bg-red-50 border-red-300 text-red-600' : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'

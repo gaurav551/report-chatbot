@@ -39,7 +39,9 @@ export const ChatInput = forwardRef<HTMLInputElement, {
       };
       
       recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
+        let transcript = event.results[0][0].transcript;
+        // Remove trailing periods/dots
+        transcript = transcript.replace(/\.+$/, '');
         const finalMessage = voicePrompt ? `${voicePrompt} ${transcript}` : transcript;
         setMessage(finalMessage);
         setIsListening(false);
