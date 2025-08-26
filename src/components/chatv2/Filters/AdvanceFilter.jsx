@@ -7,7 +7,8 @@ const AdvanceFilter = forwardRef(
   ({ onFiltersApplied, isVisible = true }, ref) => {
     const [dimensionFilters, setDimensionFilters] = useState({});
     const [measureFilters, setMeasureFilters] = useState({});
-    const [isExpanded, setIsExpanded] = useState(true);
+    // Changed default to false (Full Report selected by default)
+    const [isExpanded, setIsExpanded] = useState(false);
 
     // Separate states for revenue and expense queries for dimensions
     const [dimensionFiltersExpQuery, setDimensionFiltersExpQuery] = useState();
@@ -57,16 +58,21 @@ const AdvanceFilter = forwardRef(
       handleSubmit,
     }));
 
-    const toggleExpanded = (e) => {
-      e.stopPropagation(); // Prevent event bubbling
-      //scroll a little down
-      setIsExpanded(!isExpanded);
-      setTimeout(() => {
-    e.target.scrollIntoView({ 
-      behavior: 'smooth', 
-      block: 'start' 
-    });
-  }, 100); // Small delay to ensure DOM updates
+    const handleReportTypeChange = (reportType) => {
+      const newIsExpanded = reportType === 'advanced';
+      setIsExpanded(newIsExpanded);
+      
+      if (newIsExpanded) {
+        setTimeout(() => {
+          const element = document.querySelector('.report-type-selector');
+          if (element) {
+            element.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start' 
+            });
+          }
+        }, 100);
+      }
     };
 
     return (
@@ -77,44 +83,66 @@ const AdvanceFilter = forwardRef(
       >
         <div className="px-4">
           <div className="space-y-2">
-            {/* Compact Full Report Toggle - always visible and left-aligned */}
+            {/* Radio Button Report Type Selector */}
             <div className="flex items-center justify-start">
-              <div className="inline-flex items-center bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200">
-                <input
-                  type="checkbox"
-                  checked={isExpanded}
-                  onChange={toggleExpanded}
-                  className="mr-2 w-3 h-3"
-                />
-                <label 
-                  className="text-sm font-medium text-gray-600 cursor-pointer select-none mr-2"
-                  onClick={toggleExpanded}
-                >
-                  Full Report
-                  <div className="text-xs">Advanced Analysis</div>
-                </label>
-                <div
-                  className={`transition-transform duration-300 cursor-pointer ${
-                    !isExpanded ? "rotate-180" : "rotate-0"
-                  }`}
-                  onClick={toggleExpanded}
-                >
-                  <ChevronDown className="w-3 h-3 text-gray-500" />
+              <div className="inline-flex items-center bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-200 report-type-selector">
+                <div className="flex items-center space-x-4">
+                  {/* Full Report Radio Button */}
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="reportType"
+                      value="full"
+                      checked={!isExpanded}
+                      onChange={() => handleReportTypeChange('full')}
+                      className="mr-2 w-3 h-3"
+                    />
+                    <span className="text-sm font-medium text-gray-600 select-none">
+                      Full Report
+                    </span>
+                  </label>
+                  
+                  {/* Advanced Analysis Radio Button */}
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="reportType"
+                      value="advanced"
+                      checked={isExpanded}
+                      onChange={() => handleReportTypeChange('advanced')}
+                      className="mr-2 w-3 h-3"
+                    />
+                    <span className="text-sm font-medium text-gray-600 select-none">
+                      Advanced Analysis
+                    </span>
+                  </label>
                 </div>
+                
+                {/* Chevron icon - only show when Advanced Analysis is selected */}
+                {isExpanded && (
+                  <div className="ml-3 pl-3 border-l border-gray-300">
+                    <div
+                      className={`transition-transform duration-300 cursor-pointer ${
+                        !isExpanded ? "rotate-180" : "rotate-0"
+                      }`}
+                      onClick={() => handleReportTypeChange('full')}
+                    >
+                      <ChevronDown className="w-3 h-3 text-gray-500" />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-
-
-            {/* Filter Sections - Shown when expanded */}
+            {/* Filter Sections - Shown when Advanced Analysis is selected */}
             <div
               className={`overflow-hidden transition-all duration-500 ease-in-out ${
-                !isExpanded
+                isExpanded
                   ? "max-h-[2000px] opacity-100 transform translate-y-0"
                   : "max-h-0 opacity-0 transform -translate-y-4"
               }`}
             >
-              {!isExpanded && (
+              {isExpanded && (
                 <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
                   <DimensionFilter
                     filters={dimensionFilters}

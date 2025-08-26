@@ -15,7 +15,7 @@ interface ValidationResponse {
 }
 
 const validateUser = async (username: string, userId: string): Promise<ValidationResponse> => {
-  const response = await axios.get(`https://agentic.aiweaver.ai/user/${username}_${userId}`);
+  const response = await axios.get(`https://agentic.aiweaver.ai/user?userName=${username}&userId=${userId}`);
   return response.data;
 };
 
