@@ -51,6 +51,8 @@ export const ChatMain: React.FC<ChatMainProps> = ({
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string>("");
   const [parametersSubmitted, setParametersSubmitted] = useState(false);
+  const [chatEnabled, setChatEnabled] = useState(false);
+
   
   // Store form parameters for report generation
   const [reportParams, setReportParams] = useState<ParameterFormData | null>(
@@ -327,10 +329,11 @@ const [filterParams, setFilterParams] = useState({
   dimensionFiltersRevQuery: any,
   measureFiltersRevQuery: any,
   dimensionFilters: any,
-  measureFilters: any
+  measureFilters: any,
+  text:any
 ) => {
   // Create a message with the filter data
-  const filterText = generateFilterMessage(dimensionFilters, measureFilters);
+  const filterText = generateFilterMessage(dimensionFilters, measureFilters,text);
   
   const newMessage: Message = {
     id: Date.now().toString(),
@@ -361,8 +364,9 @@ const [filterParams, setFilterParams] = useState({
 };
 
   const handleMessage = async (messageText: string) => {
+
     if (advanceFilterRef.current) {
-      advanceFilterRef.current.handleSubmit();
+      advanceFilterRef.current.handleSubmit(messageText);
     }
   };
 
@@ -465,8 +469,9 @@ const [filterParams, setFilterParams] = useState({
           <div >
             <AdvanceFilter
               ref={advanceFilterRef as any}
-              key={messages.length}
+              
               onFiltersApplied={addFilterMessage}
+              onChatEnabledChange={setChatEnabled}
             />
           </div>
         )}
@@ -480,9 +485,11 @@ const [filterParams, setFilterParams] = useState({
             chatMutation.isPending ||
             reportGenerationMutation.isPending ||
             reportParams === null 
+           // !chatEnabled
           }
+          chatEnabled={chatEnabled}
           serviceType={ServiceType.PRO}
-          placeholder="Chat is disabled for now, please set report parameters from selection above"
+          placeholder={chatEnabled ? "Type your message..." : "Chat is disabled for now, please set report parameters from selection above"}
         />
       </div>
     </div>

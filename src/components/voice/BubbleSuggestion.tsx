@@ -416,7 +416,6 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
         return (
           <div className="flex items-center gap-2">
             <Check className="w-4 h-4 text-green-500" />
-            <span className="text-sm font-medium text-green-700">Ready to generate report</span>
           </div>
         );
       default: return null;

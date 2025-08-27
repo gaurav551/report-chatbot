@@ -86,9 +86,11 @@ const formatMeasureFilters = (measureFilters) => {
  */
 export const generateFilterMessage = (
   dimensionFilters,
-  measureFilters
+  measureFilters,
+  text
 ) => {
   // Check if both filters are empty
+  if(text) return text;
   const isDimensionFiltersEmpty = !dimensionFilters || Object.keys(dimensionFilters).length === 0;
   const isMeasureFiltersEmpty = !measureFilters || Object.keys(measureFilters).length === 0;
 

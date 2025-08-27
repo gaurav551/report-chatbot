@@ -4,11 +4,12 @@ import DimensionFilter from "./DimensionFilter";
 import MeasureFilter from "./MeasureFilter";
 
 const AdvanceFilter = forwardRef(
-  ({ onFiltersApplied, isVisible = true }, ref) => {
+  ({ onFiltersApplied, isVisible = true, onChatEnabledChange }, ref) => {
     const [dimensionFilters, setDimensionFilters] = useState({});
     const [measureFilters, setMeasureFilters] = useState({});
     // Changed default to false (Full Report selected by default)
     const [isExpanded, setIsExpanded] = useState(false);
+    const [selectedReportType, setSelectedReportType] = useState('full');
 
     // Separate states for revenue and expense queries for dimensions
     const [dimensionFiltersExpQuery, setDimensionFiltersExpQuery] = useState();
@@ -18,7 +19,7 @@ const AdvanceFilter = forwardRef(
     const [measureFiltersExpQuery, setMeasureFiltersExpQuery] = useState();
     const [measureFiltersRevQuery, setMeasureFiltersRevQuery] = useState();
 
-    const handleSubmit = () => {
+    const handleSubmit = (text) => {
       const filterData = {
         isFullReport: !isExpanded,
         dimensionFilters,
@@ -34,6 +35,7 @@ const AdvanceFilter = forwardRef(
       console.log("Dimension Filters Rev Query:", dimensionFiltersRevQuery);
       console.log("Measure Filters Exp Query:", measureFiltersExpQuery);
       console.log("Measure Filters Rev Query:", measureFiltersRevQuery);
+      console.log("message text:", text);
 
       if (onFiltersApplied) {
         onFiltersApplied(
@@ -42,7 +44,8 @@ const AdvanceFilter = forwardRef(
           dimensionFiltersRevQuery,
           measureFiltersRevQuery,
           dimensionFilters,
-          measureFilters
+          measureFilters,
+          text
         );
         console.log("Filters applied successfully with queries:", {
           dimensionFiltersExpQuery,
@@ -59,8 +62,16 @@ const AdvanceFilter = forwardRef(
     }));
 
     const handleReportTypeChange = (reportType) => {
+      setSelectedReportType(reportType);
       const newIsExpanded = reportType === 'advanced';
       setIsExpanded(newIsExpanded);
+      
+      // Handle chat mode
+      if (reportType === 'chat' && onChatEnabledChange) {
+        onChatEnabledChange(true);
+      } else if (onChatEnabledChange) {
+        onChatEnabledChange(false);
+      }
       
       if (newIsExpanded) {
         setTimeout(() => {
@@ -93,7 +104,7 @@ const AdvanceFilter = forwardRef(
                       type="radio"
                       name="reportType"
                       value="full"
-                      checked={!isExpanded}
+                      checked={selectedReportType === 'full'}
                       onChange={() => handleReportTypeChange('full')}
                       className="mr-2 w-3 h-3"
                     />
@@ -108,12 +119,27 @@ const AdvanceFilter = forwardRef(
                       type="radio"
                       name="reportType"
                       value="advanced"
-                      checked={isExpanded}
+                      checked={selectedReportType === 'advanced'}
                       onChange={() => handleReportTypeChange('advanced')}
                       className="mr-2 w-3 h-3"
                     />
                     <span className="text-sm font-medium text-gray-600 select-none">
                       Advanced Analysis
+                    </span>
+                  </label>
+                  
+                  {/* Chat Radio Button */}
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="reportType"
+                      value="chat"
+                      checked={selectedReportType === 'chat'}
+                      onChange={() => handleReportTypeChange('chat')}
+                      className="mr-2 w-3 h-3"
+                    />
+                    <span className="text-sm font-medium text-gray-600 select-none">
+                      Chat
                     </span>
                   </label>
                 </div>

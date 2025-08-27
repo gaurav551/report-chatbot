@@ -8,8 +8,9 @@ export const ChatInput = forwardRef<HTMLInputElement, {
   placeholder?: string;
   voicePrompt?: string;
   isVoiceEnabled?: boolean;
-  serviceType? : ServiceType
-}>(({ onSendMessage, disabled, placeholder = "Type your message...", voicePrompt, isVoiceEnabled = false, serviceType=ServiceType.NLP }, ref) => {
+  serviceType? : ServiceType;
+  chatEnabled?:boolean;
+}>(({ onSendMessage, disabled, placeholder = "Type your message...", voicePrompt, isVoiceEnabled = false, serviceType=ServiceType.NLP, chatEnabled = false }, ref) => {
   const [message, setMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
@@ -106,7 +107,7 @@ export const ChatInput = forwardRef<HTMLInputElement, {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
-          disabled={serviceType==ServiceType.PRO? true : disabled}
+          disabled={serviceType==ServiceType.PRO? !chatEnabled : disabled}
           autoFocus
           className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-100"
           placeholder={isListening ? "Listening..." : placeholder}
