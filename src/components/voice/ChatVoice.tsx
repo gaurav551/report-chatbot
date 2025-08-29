@@ -47,6 +47,7 @@ export const ChatVoice: React.FC<ChatVoiceProps> = ({
   onMessagesChange
 }) => {
   const advanceFilterRef = useRef(null) as any;
+  const [chatEnabled, setChatEnabled] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [apiSessionId, setApiSessionId] = useState<string>("");
@@ -458,6 +459,8 @@ const [filterParams, setFilterParams] = useState({
               ref={advanceFilterRef as any}
               key={messages.length}
               onFiltersApplied={addFilterMessage}
+              onChatEnabledChange={setChatEnabled}
+
             />
           </div>
         )}
@@ -481,9 +484,9 @@ const [filterParams, setFilterParams] = useState({
             reportParams === null 
            // !chatEnabled
           }
-          chatEnabled={false}
+          chatEnabled={chatEnabled}
           serviceType={ServiceType.PRO}
-          placeholder={false ? "Type your message..." : "Chat is disabled for now, please set report parameters from selection above"}
+          placeholder={chatEnabled ? "Type your message..." : "Chat is disabled for now, please set report parameters from selection above"}
         />
       </div>
             

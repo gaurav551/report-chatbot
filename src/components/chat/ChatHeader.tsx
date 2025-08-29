@@ -232,7 +232,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
 
           {/* Forecasting Button */}
-          <button
+          {/* <button
             onClick={handleForecastingClick}
             className="
               text-white p-3 rounded-full shadow-lg transition-all duration-300 
@@ -242,7 +242,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             title="Open Forecasting (New Tab)"
           >
             <TrendingUp className="w-5 h-5" />
-          </button>
+          </button> */}
         </div>
       )}
 

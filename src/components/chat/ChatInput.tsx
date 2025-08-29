@@ -27,9 +27,13 @@ export const ChatInput = forwardRef<HTMLInputElement, {
     
     if (SpeechRecognition) {
       recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
+      // Enable continuous and interim results for better voice recognition
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
+      
+      // Add additional settings for better voice quality
+      recognitionRef.current.maxAlternatives = 1;
       
       recognitionRef.current.onstart = () => {
         setIsListening(true);
@@ -40,17 +44,66 @@ export const ChatInput = forwardRef<HTMLInputElement, {
       };
       
       recognitionRef.current.onresult = (event: any) => {
-        let transcript = event.results[0][0].transcript;
-        // Remove trailing periods/dots
-        transcript = transcript.replace(/\.+$/, '');
-        const finalMessage = voicePrompt ? `${voicePrompt} ${transcript}` : transcript;
-        setMessage(finalMessage);
-        setIsListening(false);
+        let transcript = '';
+        let isFinal = false;
+        
+        // Process all results to get the most accurate transcript
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            transcript += result[0].transcript;
+            isFinal = true;
+          } else {
+            // Show interim results in real-time
+            const interimTranscript = result[0].transcript;
+            const tempMessage = voicePrompt ? `${voicePrompt} ${interimTranscript}` : interimTranscript;
+            setMessage(tempMessage);
+          }
+        }
+        
+        // Only process final results
+        if (isFinal && transcript.trim()) {
+          // Clean up the transcript
+          transcript = transcript.trim().replace(/\.+$/, '');
+          const finalMessage = voicePrompt ? `${voicePrompt} ${transcript}` : transcript;
+          
+          // Set the message and auto-send
+          setMessage(finalMessage);
+          
+          // Stop listening
+          if (recognitionRef.current) {
+            recognitionRef.current.stop();
+          }
+          
+          // Auto-send the message after a brief delay to ensure state updates
+          setTimeout(() => {
+            onSendMessage(finalMessage.trim());
+            setMessage('');
+            // Refocus the input
+            if (inputRef && 'current' in inputRef) {
+              inputRef.current?.focus();
+            }
+          }, 100);
+        }
       };
       
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
+        
+        // Handle specific error cases
+        if (event.error === 'no-speech') {
+          console.log('No speech detected, stopping recognition');
+        } else if (event.error === 'network') {
+          console.log('Network error, please check your connection');
+        }
+      };
+      
+      // Handle when speech recognition stops automatically
+      recognitionRef.current.onspeechend = () => {
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+        }
       };
     }
     
@@ -59,7 +112,7 @@ export const ChatInput = forwardRef<HTMLInputElement, {
         recognitionRef.current.stop();
       }
     };
-  }, [voicePrompt]);
+  }, [voicePrompt, onSendMessage]);
 
   const handleSubmit = () => {
    
@@ -87,6 +140,8 @@ export const ChatInput = forwardRef<HTMLInputElement, {
     if (isListening) {
       recognitionRef.current?.stop();
     } else {
+      // Clear any existing message before starting voice input
+      setMessage('');
       recognitionRef.current?.start();
     }
   };
@@ -116,14 +171,14 @@ export const ChatInput = forwardRef<HTMLInputElement, {
           <button
             onClick={toggleVoiceInput}
             disabled={disabled}
-            className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-colors ${
+            className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-all ${
               isListening 
-                ? 'bg-red-100 text-red-600 hover:bg-red-200' 
+                ? 'bg-red-100 text-red-600 hover:bg-red-200 animate-pulse' 
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
             title={isListening ? "Stop listening" : "Start voice input"}
           >
-            {isListening ? <Mic className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
           </button>
         )}
       </div>

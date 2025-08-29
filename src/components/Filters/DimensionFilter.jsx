@@ -222,11 +222,11 @@ const DimensionFilter = ({
         const availableOptions = getOptionsForField(field);
         
         // Check if all available options are selected (since ModernSelect handles "Select All" internally)
-        if (filter.values.length === availableOptions.length) {
-          criteria += ` and a.${mappedField} = 'All'`;
-        } else {
+        // if (filter.values.length === availableOptions.length) {
+        //   criteria += ` and a.${mappedField} = 'All'`;
+        // } else {
           criteria += ` and a.${mappedField} in (${filter.values.map(v => `'${v}'`).join(',')})`;
-        }
+       // }
       } else if (filter.type === 'contains' && filter.containsValue) {
         criteria += ` and a.${mappedField} like '%${filter.containsValue}%'`;
       } else if (filter.type === 'range' && filter.rangeFrom && filter.rangeTo) {

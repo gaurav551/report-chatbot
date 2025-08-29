@@ -32,6 +32,7 @@ interface BubbleDropdownProps {
   disabled?: boolean;
   showSelectAll?: boolean;
   onAutoNext?: () => void;
+  key?: string; // Add key prop to force re-render
 }
 
 const BubbleDropdown: React.FC<BubbleDropdownProps> = ({
@@ -49,12 +50,24 @@ const BubbleDropdown: React.FC<BubbleDropdownProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Clear search when dropdown closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm('');
+    }
+  }, [isOpen]);
+
+  // Clear search when options change (new step)
+  useEffect(() => {
+    setSearchTerm('');
+  }, [options]);
+
   // Auto-advance when selections are made
   useEffect(() => {
     if (selectedValues.length > 0 && onAutoNext) {
       const timer = setTimeout(() => {
         onAutoNext();
-      }, 500);
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [selectedValues.length, onAutoNext]);
@@ -471,6 +484,7 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
       case 'funds':
         return (
           <BubbleDropdown
+            key={`funds-${formData.budgetYear}`} // Force re-render with unique key
             label="Fund Codes"
             options={availableOptions.fundCodes}
             selectedValues={formData.fundCodes}
@@ -486,6 +500,7 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
       case 'departments':
         return (
           <BubbleDropdown
+            key={`departments-${formData.budgetYear}-${formData.fundCodes.join(',')}`} // Force re-render with unique key
             label="Departments"
             options={availableOptions.departments}
             selectedValues={formData.departments}
@@ -498,8 +513,6 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
           />
         );
 
-      
-      
       default: 
         return null;
     }
