@@ -12,7 +12,7 @@ import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { ParameterForm, ParameterFormData } from "./ParameterForm";
 import { detectReportOutput } from "../../utils/detectReport";
-import AdvanceFilter from "./Filters/AdvanceFilter";
+import AdvanceFilter from "../Filters/AdvanceFilter";
 import { generateFilterMessage } from "../../utils/generateFIlterMessage";
 import { ReportGenerationRequest } from "../../interfaces/ReportGenerationRequest";
 import { ServiceType } from "../../const/serviceType";
@@ -367,6 +367,8 @@ const [filterParams, setFilterParams] = useState({
 
     if (advanceFilterRef.current) {
       advanceFilterRef.current.handleSubmit(messageText);
+      advanceFilterRef.current.hideChatToggle();
+
     }
   };
 
@@ -469,7 +471,7 @@ const [filterParams, setFilterParams] = useState({
           <div >
             <AdvanceFilter
               ref={advanceFilterRef as any}
-              
+             // key={messages.length} // Reset internal state when messages change
               onFiltersApplied={addFilterMessage}
               onChatEnabledChange={setChatEnabled}
             />
@@ -478,7 +480,7 @@ const [filterParams, setFilterParams] = useState({
       </div>
 
       {/* Chat Input - Sticky at bottom */}
-      <div className="flex-shrink-0 bg-white border-t border-gray-200 px-2 py-2">
+      <div className="flex-shrink-0 bg-white border-t border-gray-200 px-2 py-1">
         <ChatInput
           onSendMessage={handleMessage}
           disabled={

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, MicOff, Check, X, ChevronRight, Loader2, Volume2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Check, X, ChevronRight, Loader2, ChevronUp, Search } from 'lucide-react';
 
 export interface BubbleSuggestionData {
   reportSelection: string;
@@ -17,163 +17,296 @@ interface BubbleSuggestionProps {
 const API_BASE_URL = 'https://agentic.aiweaver.ai/api';
 type Step = 'year' | 'funds' | 'departments' | 'complete';
 
-// Voice recognition utilities (unchanged)
-class VoiceRecognitionService {
-  private recognition: any = null;
-  private isSupported = false;
-
-  constructor() {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      this.recognition = new SpeechRecognition();
-      this.recognition.continuous = false;
-      this.recognition.interimResults = false;
-      this.recognition.lang = 'en-US';
-      this.isSupported = true;
-    }
-  }
-
-  isAvailable() { return this.isSupported; }
-
-  start(onResult: (transcript: string) => void, onError: (error: string) => void, onStart: () => void, onEnd: () => void) {
-    if (!this.isSupported) {
-      onError('Speech recognition not supported');
-      return;
-    }
-    this.recognition.onstart = onStart;
-    this.recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript.trim().replace(/[.,!?]+$/, '');
-      onResult(transcript);
-    };
-    this.recognition.onerror = (event: any) => onError(event.error);
-    this.recognition.onend = onEnd;
-    try { this.recognition.start(); } catch (error) { onError('Failed to start recognition'); }
-  }
-
-  stop() { if (this.recognition) this.recognition.stop(); }
+interface DropdownOption {
+  key: string;
+  value: string;
 }
 
-// Text matching utilities (condensed)
-class TextMatcher {
-  static normalizeText(text: string): string {
-    return text.toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
-  }
+interface BubbleDropdownProps {
+  label: string;
+  options: DropdownOption[];
+  selectedValues: string[];
+  onSelectionChange: (values: string[]) => void;
+  placeholder: string;
+  loading?: boolean;
+  disabled?: boolean;
+  showSelectAll?: boolean;
+  onAutoNext?: () => void;
+}
 
-  static matchText(transcript: string, targetText: string): boolean {
-    const normalizedTranscript = this.normalizeText(transcript);
-    const normalizedTarget = this.normalizeText(targetText);
-    
-    if (normalizedTranscript.includes(normalizedTarget) || normalizedTarget.includes(normalizedTranscript)) {
-      return true;
+const BubbleDropdown: React.FC<BubbleDropdownProps> = ({
+  label,
+  options,
+  selectedValues,
+  onSelectionChange,
+  placeholder,
+  loading = false,
+  disabled = false,
+  showSelectAll = true,
+  onAutoNext
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Auto-advance when selections are made
+  useEffect(() => {
+    if (selectedValues.length > 0 && onAutoNext) {
+      const timer = setTimeout(() => {
+        onAutoNext();
+      }, 500);
+      return () => clearTimeout(timer);
     }
-    
-    const transcriptWords = normalizedTranscript.split(' ').filter(w => w.length > 1);
-    const targetWords = normalizedTarget.split(' ').filter(w => w.length > 1);
-    
-    for (const tWord of transcriptWords) {
-      for (const targetWord of targetWords) {
-        if (tWord.length > 2 && targetWord.length > 2 && (tWord.includes(targetWord) || targetWord.includes(tWord))) {
-          return true;
-        }
+  }, [selectedValues.length, onAutoNext]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
       }
-    }
-    return false;
-  }
-
-  static matchYear(transcript: string, year: string): boolean {
-    const normalized = this.normalizeText(transcript);
-    if (normalized.includes(year.toLowerCase())) return true;
-    
-    const numbers = transcript.match(/\d{4}/g);
-    if (numbers?.some(num => year.includes(num))) return true;
-    
-    const yearMappings: Record<string, string> = {
-      'twenty twenty four': '2024', 'twenty twenty three': '2023',
-      'twenty twenty five': '2025', 'twenty twenty two': '2022'
     };
-    
-    return Object.entries(yearMappings).some(([spoken, numeric]) => 
-      normalized.includes(spoken) && year.includes(numeric)
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(option =>
+    option.value.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    option.key.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSelectAll = () => {
+    if (selectedValues.length === filteredOptions.length) {
+      onSelectionChange([]);
+    } else {
+      onSelectionChange(filteredOptions.map(opt => opt.key));
+    }
+  };
+
+  const handleOptionToggle = (optionKey: string) => {
+    if (selectedValues.includes(optionKey)) {
+      onSelectionChange(selectedValues.filter(val => val !== optionKey));
+    } else {
+      onSelectionChange([...selectedValues, optionKey]);
+    }
+  };
+
+  const handleRemoveSelection = (optionKey: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelectionChange(selectedValues.filter(val => val !== optionKey));
+  };
+
+  // Render selected items as compact bubbles
+  const renderSelectedBubbles = () => {
+    if (selectedValues.length === 0) return null;
+
+    return (
+      <div className="flex flex-wrap gap-1 mb-1">
+        {selectedValues.slice(0, 3).map(key => {
+          const option = options.find(opt => opt.key === key);
+          if (!option) return null;
+          
+          return (
+            <span
+              key={key}
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full border border-blue-200"
+            >
+              <span className="truncate max-w-20">{option.value}</span>
+              {!disabled && (
+                <button
+                  onClick={(e) => handleRemoveSelection(key, e)}
+                  className="flex-shrink-0 w-2.5 h-2.5 flex items-center justify-center hover:bg-blue-200 rounded-full transition-colors"
+                >
+                  <X className="w-2 h-2" />
+                </button>
+              )}
+            </span>
+          );
+        })}
+        {selectedValues.length > 3 && (
+          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+            +{selectedValues.length - 3}
+          </span>
+        )}
+      </div>
     );
-  }
-}
+  };
 
-// Command processor (condensed)
-class CommandProcessor {
-  static isGlobalCommand(transcript: string): string | null {
-    const normalized = TextMatcher.normalizeText(transcript);
-    if (normalized.includes('select all') || normalized === 'all') return 'select_all';
-    if (normalized.includes('next') || normalized === 'next') return 'next';
-    if (normalized.includes('clear') || normalized.includes('reset')) return 'clear';
-    return null;
-  }
+  return (
+    <div className="w-full" ref={dropdownRef}>
+      {/* Selected Bubbles */}
+      {renderSelectedBubbles()}
+      
+      {/* Compact Bubble Button */}
+      <div className="relative">
+        <button
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          disabled={disabled || loading}
+          className={`inline-flex items-center px-3 py-2 text-white text-sm font-medium rounded-full transition-all duration-200 ${
+            disabled ? 'opacity-50 cursor-not-allowed bg-gray-400' : 'cursor-pointer bg-blue-500 hover:bg-blue-600'
+          }`}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              Loading...
+            </>
+          ) : (
+            <>
+              {label}
+              {selectedValues.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 bg-white bg-opacity-20 rounded-full text-xs">
+                  {selectedValues.length}
+                </span>
+              )}
+              <ChevronUp className={`w-4 h-4 ml-2 transition-transform duration-200 ${
+                isOpen ? 'rotate-180' : ''
+              }`} />
+            </>
+          )}
+        </button>
 
-  static findMatches(transcript: string, options: [string, string][], matchByValue = true): [string, string][] {
-    return options.filter(([key, value]) => 
-      TextMatcher.matchText(transcript, matchByValue ? value : key)
-    );
-  }
+        {/* Dropdown Panel - Opens Above */}
+        {isOpen && !disabled && (
+          <div className="absolute bottom-full left-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden min-w-64">
+            {/* Search Input */}
+            <div className="p-2 border-b border-gray-100">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search options..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-7 pr-3 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
 
-  static findYearMatches(transcript: string, years: string[]): string[] {
-    return years.filter(year => TextMatcher.matchYear(transcript, year));
-  }
-}
+            {/* Options List */}
+            <div className="max-h-48 overflow-y-auto">
+              {/* Select All Option */}
+              {showSelectAll && filteredOptions.length > 1 && (
+                <div
+                  onClick={handleSelectAll}
+                  className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50"
+                >
+                  <div className={`w-3 h-3 rounded border flex items-center justify-center transition-colors ${
+                    selectedValues.length === filteredOptions.length
+                      ? 'bg-blue-500 border-blue-500'
+                      : selectedValues.length > 0
+                      ? 'bg-blue-100 border-blue-300'
+                      : 'border-gray-300'
+                  }`}>
+                    {selectedValues.length === filteredOptions.length && (
+                      <Check className="w-2 h-2 text-white" />
+                    )}
+                    {selectedValues.length > 0 && selectedValues.length < filteredOptions.length && (
+                      <div className="w-1 h-1 bg-blue-500 rounded" />
+                    )}
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Select All
+                  </span>
+                </div>
+              )}
+
+              {/* Individual Options */}
+              {filteredOptions.map((option) => (
+                <div
+                  key={option.key}
+                  onClick={() => handleOptionToggle(option.key)}
+                  className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
+                >
+                  <div className={`w-3 h-3 rounded border flex items-center justify-center transition-colors ${
+                    selectedValues.includes(option.key)
+                      ? 'bg-blue-500 border-blue-500'
+                      : 'border-gray-300 hover:border-blue-300'
+                  }`}>
+                    {selectedValues.includes(option.key) && (
+                      <Check className="w-2 h-2 text-white" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-gray-700 truncate">{option.value}</div>
+                  </div>
+                </div>
+              ))}
+
+              {/* No Results */}
+              {filteredOptions.length === 0 && (
+                <div className="px-3 py-4 text-center text-gray-500 text-xs">
+                  No options found
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
   sessionId, onParametersSubmit, disabled = false
 }) => {
   const [currentStep, setCurrentStep] = useState<Step>('year');
   const [formData, setFormData] = useState<BubbleSuggestionData>({
-    reportSelection: 'Current Version', budgetYear: '', fundCodes: [], departments: []
+    reportSelection: 'Current Version', 
+    budgetYear: '', 
+    fundCodes: [], 
+    departments: []
   });
+  
   const [availableOptions, setAvailableOptions] = useState<{
-    years: string[]; fundCodes: [string, string][]; departments: [string, string][];
+    years: string[]; 
+    fundCodes: DropdownOption[]; 
+    departments: DropdownOption[];
   }>({ years: [], fundCodes: [], departments: [] });
-  const [loading, setLoading] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [voiceFeedback, setVoiceFeedback] = useState<string>('');
+  
+  const [loading, setLoading] = useState({
+    fundCodes: false,
+    departments: false
+  });
+  
   const [error, setError] = useState<string>('');
 
-  const voiceServiceRef = useRef<VoiceRecognitionService | null>(null);
-  const feedbackTimeoutRef = useRef<NodeJS.Timeout>();
-
-  useEffect(() => {
-    voiceServiceRef.current = new VoiceRecognitionService();
-    return () => { if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current); };
-  }, []);
-
-  const showFeedback = useCallback((message: string, isError = false) => {
-    if (isError) { setError(message); setVoiceFeedback(''); } 
-    else { setVoiceFeedback(message); setError(''); }
-    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
-    feedbackTimeoutRef.current = setTimeout(() => { setVoiceFeedback(''); setError(''); }, 3000);
-  }, []);
-
-  // API calls (simplified)
+  // API calls
   const loadBudgetYears = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/budget-years`);
       if (!res.ok) throw new Error('Failed to load budget years');
       const data = await res.json();
       setAvailableOptions(prev => ({ ...prev, years: data.budget_years }));
-    } catch (error) { showFeedback('Failed to load budget years', true); }
-  }, [showFeedback]);
+    } catch (error) {
+      setError('Failed to load budget years');
+      setTimeout(() => setError(''), 3000);
+    }
+  }, []);
 
   const loadFundCodes = useCallback(async (year: string) => {
     if (!year) return;
-    setLoading(true);
+    setLoading(prev => ({ ...prev, fundCodes: true }));
     try {
       const res = await fetch(`${API_BASE_URL}/fund-codes?year=${encodeURIComponent(year)}`);
       if (!res.ok) throw new Error('Failed to load fund codes');
       const data = await res.json();
-      setAvailableOptions(prev => ({ ...prev, fundCodes: data.fund_codes, departments: [] }));
-    } catch (error) { showFeedback('Failed to load fund codes', true); }
-    setLoading(false);
-  }, [showFeedback]);
+      const fundOptions: DropdownOption[] = data.fund_codes.map(([key, value]: [string, string]) => ({
+        key,
+        value
+      }));
+      setAvailableOptions(prev => ({ ...prev, fundCodes: fundOptions, departments: [] }));
+    } catch (error) {
+      setError('Failed to load fund codes');
+      setTimeout(() => setError(''), 3000);
+    }
+    setLoading(prev => ({ ...prev, fundCodes: false }));
+  }, []);
 
   const loadDepartments = useCallback(async (year: string, fundCodes: string[]) => {
     if (!year || fundCodes.length === 0) return;
-    setLoading(true);
+    setLoading(prev => ({ ...prev, departments: true }));
     try {
       const deptMap = new Map<string, string>();
       for (const code of fundCodes) {
@@ -183,82 +316,63 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
           data.departments.forEach(([key, value]: [string, string]) => deptMap.set(key, value));
         }
       }
-      setAvailableOptions(prev => ({ ...prev, departments: Array.from(deptMap.entries()) }));
-    } catch (error) { showFeedback('Failed to load departments', true); }
-    setLoading(false);
-  }, [showFeedback]);
+      const deptOptions: DropdownOption[] = Array.from(deptMap.entries()).map(([key, value]) => ({
+        key,
+        value
+      }));
+      setAvailableOptions(prev => ({ ...prev, departments: deptOptions }));
+    } catch (error) {
+      setError('Failed to load departments');
+      setTimeout(() => setError(''), 3000);
+    }
+    setLoading(prev => ({ ...prev, departments: false }));
+  }, []);
 
-  useEffect(() => { loadBudgetYears(); }, [loadBudgetYears]);
+  useEffect(() => { 
+    loadBudgetYears(); 
+  }, [loadBudgetYears]);
 
-  // Handlers (simplified)
-  const selectYear = useCallback((year: string) => {
+  // Auto-advance handlers
+  const selectYear = useCallback(async (year: string) => {
     if (disabled) return;
     setFormData(prev => ({ ...prev, budgetYear: year, fundCodes: [], departments: [] }));
-  }, [disabled, showFeedback]);
+    await loadFundCodes(year);
+    
+    setTimeout(() => {
+      setCurrentStep('funds');
+    }, 300);
+  }, [disabled, loadFundCodes]);
 
-  const toggleFund = useCallback((fundCode: string) => {
+  const handleFundCodeChange = useCallback(async (fundCodes: string[]) => {
     if (disabled) return;
-    setFormData(prev => {
-      const newFundCodes = prev.fundCodes.includes(fundCode)
-        ? prev.fundCodes.filter(c => c !== fundCode)
-        : [...prev.fundCodes, fundCode];
-      return { ...prev, fundCodes: newFundCodes, departments: [] };
-    });
+    setFormData(prev => ({ ...prev, fundCodes, departments: [] }));
+    
+    if (fundCodes.length > 0 && formData.budgetYear) {
+      await loadDepartments(formData.budgetYear, fundCodes);
+    } else {
+      setAvailableOptions(prev => ({ ...prev, departments: [] }));
+    }
+  }, [disabled, formData.budgetYear, loadDepartments]);
+
+  const handleDepartmentChange = useCallback((departments: string[]) => {
+    if (disabled) return;
+    setFormData(prev => ({ ...prev, departments }));
   }, [disabled]);
 
-  const toggleDepartment = useCallback((deptCode: string) => {
-    if (disabled) return;
-    setFormData(prev => {
-      const newDepartments = prev.departments.includes(deptCode)
-        ? prev.departments.filter(d => d !== deptCode)
-        : [...prev.departments, deptCode];
-      return { ...prev, departments: newDepartments };
-    });
-  }, [disabled]);
-
-  const canProceed = useCallback(() => {
-    switch (currentStep) {
-      case 'year': return formData.budgetYear !== '';
-      case 'funds': return formData.fundCodes.length > 0;
-      case 'departments': return formData.departments.length > 0;
-      default: return false;
+  const handleAutoAdvanceToComplete = useCallback(() => {
+    if (formData.departments.length > 0) {
+      setCurrentStep('complete');
     }
-  }, [currentStep, formData]);
+  }, [formData.departments.length]);
 
-  const handleNext = useCallback(async () => {
-    if (!canProceed() || disabled) return;
-    switch (currentStep) {
-      case 'year':
-        await loadFundCodes(formData.budgetYear);
-        setCurrentStep('funds');
-        break;
-      case 'funds':
-        await loadDepartments(formData.budgetYear, formData.fundCodes);
-        setCurrentStep('departments');
-        break;
-      case 'departments':
-        setCurrentStep('complete');
-        break;
+  const handleAutoAdvanceToDepartments = useCallback(() => {
+    if (formData.fundCodes.length > 0) {
+      setCurrentStep('departments');
     }
-  }, [currentStep, formData, canProceed, disabled, loadFundCodes, loadDepartments]);
-
-  const handleSelectAll = useCallback(() => {
-    if (disabled) return;
-    switch (currentStep) {
-      case 'funds':
-        const allFunds = availableOptions.fundCodes.map(([key]) => key);
-        setFormData(prev => ({ ...prev, fundCodes: allFunds }));
-        break;
-      case 'departments':
-        const allDepts = availableOptions.departments.map(([key]) => key);
-        setFormData(prev => ({ ...prev, departments: allDepts }));
-        break;
-    }
-  }, [currentStep, availableOptions, disabled]);
+  }, [formData.fundCodes.length]);
 
   const handleClear = useCallback(() => {
     if (disabled) return;
-    // Clear all selections and go back to start
     setFormData({
       reportSelection: 'Current Version',
       budgetYear: '',
@@ -267,82 +381,72 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
     });
     setCurrentStep('year');
     setAvailableOptions(prev => ({ ...prev, fundCodes: [], departments: [] }));
-    showFeedback('Cleared all selections - starting from beginning');
-  }, [disabled, showFeedback]);
+  }, [disabled]);
 
-  // Voice processing (unchanged logic)
-  const processVoiceCommand = useCallback((transcript: string) => {
-    const globalCommand = CommandProcessor.isGlobalCommand(transcript);
+  // Helper function to format selected items compactly
+  const formatSelectedItems = (items: string[], options: DropdownOption[], maxDisplay = 1) => {
+    if (items.length === 0) return '';
     
-    switch (globalCommand) {
-      case 'select_all': handleSelectAll(); return;
-      case 'next': if (canProceed()) handleNext(); else showFeedback('Cannot proceed. Please make a selection first.'); return;
-      case 'clear': handleClear(); return;
+    const selectedOptions = items.map(key => 
+      options.find(opt => opt.key === key)?.value || key
+    );
+    
+    if (selectedOptions.length <= maxDisplay) {
+      return selectedOptions.join(', ');
     }
-
-    let matchFound = false;
-    switch (currentStep) {
-      case 'year':
-        const yearMatches = CommandProcessor.findYearMatches(transcript, availableOptions.years);
-        if (yearMatches.length > 0) { selectYear(yearMatches[0]); matchFound = true; }
-        break;
-      case 'funds':
-        const fundMatches = CommandProcessor.findMatches(transcript, availableOptions.fundCodes, true);
-        if (fundMatches.length > 0) {
-          fundMatches.forEach(([key]) => toggleFund(key));
-          matchFound = true;
-        }
-        break;
-      case 'departments':
-        const deptMatches = CommandProcessor.findMatches(transcript, availableOptions.departments, true);
-        if (deptMatches.length > 0) {
-          deptMatches.forEach(([key]) => toggleDepartment(key));
-          matchFound = true;
-        }
-        break;
-    }
-
-    if (!matchFound) showFeedback(`No matches found for "${transcript}"`);
-  }, [currentStep, availableOptions, selectYear, toggleFund, toggleDepartment, handleSelectAll, handleNext, handleClear, canProceed, showFeedback]);
-
-  const toggleVoiceRecognition = useCallback(() => {
-    const service = voiceServiceRef.current;
-    if (isListening) {
-      service?.stop();
-      setIsListening(false);
-    } else {
-      if (!service?.isAvailable()) {
-        showFeedback('Voice recognition not available', true);
-        return;
-      }
-      service.start(
-        processVoiceCommand,
-        (error) => { setIsListening(false); showFeedback(`Voice error: ${error}`, true); },
-        () => { setIsListening(true); setVoiceFeedback('Listening...'); },
-        () => { setIsListening(false); }
-      );
-    }
-  }, [isListening, processVoiceCommand, showFeedback]);
+    
+    const displayItems = selectedOptions.slice(0, maxDisplay);
+    const remainingCount = selectedOptions.length - maxDisplay;
+    
+    return `${displayItems.join(', ')}, +${remainingCount}`;
+  };
 
   // Render helpers
   const renderProgressDots = () => {
     const steps = ['year', 'funds', 'departments'];
-    const completed = [formData.budgetYear !== '', formData.fundCodes.length > 0, formData.departments.length > 0];
+    const completed = [
+      formData.budgetYear !== '', 
+      formData.fundCodes.length > 0, 
+      formData.departments.length > 0
+    ];
     
     return (
       <div className="flex items-center gap-1">
         {completed.map((isCompleted, index) => (
-          <div key={index} className={`w-2 h-2 rounded-full ${
-            isCompleted ? 'bg-green-500' : currentStep === steps[index] ? 'bg-blue-500' : 'bg-gray-300'
+          <div key={index} className={`w-2 h-2 rounded-full transition-colors ${
+            isCompleted ? 'bg-green-500' : 
+            currentStep === steps[index] ? 'bg-blue-500' : 'bg-gray-300'
           }`} />
         ))}
       </div>
     );
   };
 
-  const renderStepContent = () => {
-    if (loading) return <div className="flex items-center gap-1 text-sm text-gray-600"><Loader2 className="w-3 h-3 animate-spin" />Loading...</div>;
+  const renderCompactSummary = () => {
+    const parts = [];
+    
+    if (formData.budgetYear) {
+      parts.push(formData.budgetYear);
+    }
+    
+    if (formData.fundCodes.length > 0) {
+      parts.push(`${formData.fundCodes.length} funds`);
+    }
+    
+    if (formData.departments.length > 0) {
+      parts.push(`${formData.departments.length} depts`);
+    }
 
+    if (parts.length === 0) return null;
+
+    return (
+      <div className="text-xs text-gray-600 mb-2">
+        {parts.join(' • ')}
+      </div>
+    );
+  };
+
+  const renderStepContent = () => {
     switch (currentStep) {
       case 'year':
         return (
@@ -352,11 +456,11 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
                 key={year}
                 onClick={() => selectYear(year)}
                 disabled={disabled}
-                className={`px-2 py-1 text-sm font-medium rounded border-2 transition-all ${
+                className={`px-3 py-1.5 text-sm font-medium rounded border transition-all ${
                   formData.budgetYear === year
-                    ? 'bg-blue-100 border-blue-400 text-blue-700'
-                    : 'bg-gray-50 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-                }`}
+                    ? 'bg-blue-50 border-blue-300 text-blue-700'
+                    : 'bg-white border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50'
+                } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 {year}
               </button>
@@ -366,172 +470,91 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
 
       case 'funds':
         return (
-          <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto">
-            {availableOptions.fundCodes.slice(0, 8).map(([key, name]) => (
-              <button
-                key={key}
-                onClick={() => toggleFund(key)}
-                disabled={disabled}
-                className={`px-2 py-1 text-sm rounded border-2 transition-all ${
-                  formData.fundCodes.includes(key)
-                    ? 'bg-green-100 border-green-400 text-green-700'
-                    : 'bg-gray-50 border-gray-200 hover:border-green-300 hover:bg-green-50'
-                }`}
-                title={name}
-              >
-                {name.length > 12 ? `${name.substring(0, 12)}...` : name}
-              </button>
-            ))}
-            {availableOptions.fundCodes.length > 8 && (
-              <div className="text-sm text-gray-500 px-2 py-1">+{availableOptions.fundCodes.length - 8}</div>
-            )}
-          </div>
+          <BubbleDropdown
+            label="Fund Codes"
+            options={availableOptions.fundCodes}
+            selectedValues={formData.fundCodes}
+            onSelectionChange={handleFundCodeChange}
+            placeholder={!formData.budgetYear ? 'Select year first' : 'Choose fund codes...'}
+            loading={loading.fundCodes}
+            disabled={disabled || !formData.budgetYear}
+            showSelectAll={true}
+            onAutoNext={handleAutoAdvanceToDepartments}
+          />
         );
 
       case 'departments':
         return (
-          <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto">
-            {availableOptions.departments.slice(0, 8).map(([key, name]) => (
-              <button
-                key={key}
-                onClick={() => toggleDepartment(key)}
-                disabled={disabled}
-                className={`px-2 py-1 text-sm rounded border-2 transition-all ${
-                  formData.departments.includes(key)
-                    ? 'bg-purple-100 border-purple-400 text-purple-700'
-                    : 'bg-gray-50 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                }`}
-                title={name}
-              >
-                {name.length > 12 ? `${name.substring(0, 12)}...` : name}
-              </button>
-            ))}
-            {availableOptions.departments.length > 8 && (
-              <div className="text-sm text-gray-500 px-2 py-1">+{availableOptions.departments.length - 8}</div>
-            )}
-          </div>
+          <BubbleDropdown
+            label="Departments"
+            options={availableOptions.departments}
+            selectedValues={formData.departments}
+            onSelectionChange={handleDepartmentChange}
+            placeholder={formData.fundCodes.length === 0 ? 'Select fund codes first' : 'Choose departments...'}
+            loading={loading.departments}
+            disabled={disabled || formData.fundCodes.length === 0}
+            showSelectAll={true}
+            onAutoNext={handleAutoAdvanceToComplete}
+          />
         );
 
-      case 'complete':
-        return (
-          <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-green-500" />
-          </div>
-        );
-      default: return null;
-    }
-  };
-
-  const getStepTitle = () => {
-    switch (currentStep) {
-      case 'year': return 'Year';
-      case 'funds': return 'Funds';
-      case 'departments': return 'Departments';
-      case 'complete': return 'Ready';
+      
+      
+      default: 
+        return null;
     }
   };
 
   return (
-    <div className="w-full bg-white border border-gray-200 rounded shadow-sm">
-      {/* Feedback bar */}
-      {(voiceFeedback || error) && (
-        <div className={`px-2 py-0.5 text-sm ${error ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
-          {error || voiceFeedback}
+    <div className="w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+      {/* Error notification */}
+      {error && (
+        <div className="px-2 py-1 bg-red-50 border-b border-red-100">
+          <div className="text-xs text-red-600 flex items-center gap-1">
+            <X className="w-3 h-3" />
+            {error}
+          </div>
         </div>
       )}
       
-      {/* Main content - horizontal layout */}
-      <div className="p-2">
-        <div className="flex items-center gap-3">
-          {/* Progress & Title */}
+      {/* Main content */}
+      <div className="p-1.5">
+        {/* Progress & Summary */}
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             {renderProgressDots()}
-            <span className="text-sm font-medium text-gray-700">{getStepTitle()}</span>
-          </div>
-
-          {/* Step Content */}
-          <div className="flex-1 min-w-0">
-            {renderStepContent()}
+            <span className="text-xs font-medium text-gray-700">
+              {currentStep === 'year' ? 'Year' : 
+               currentStep === 'funds' ? 'Funds' : 
+               currentStep === 'departments' ? 'Departments' : 'Ready'}
+            </span>
           </div>
         </div>
 
-        {/* Selected items summary */}
-        {(formData.budgetYear || formData.fundCodes.length > 0 || formData.departments.length > 0) && (
-          <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-100">
-            {formData.budgetYear && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-sm rounded-full">
-                {formData.budgetYear}
-                {!disabled && (
-                  <X className="w-3 h-3 cursor-pointer hover:bg-blue-200 rounded-full p-0.5" 
-                     onClick={() => setFormData(prev => ({...prev, budgetYear: ''}))} />
-                )}
-              </span>
-            )}
-            {formData.fundCodes.length > 0 && (
-              <span className="px-2 py-0.5 bg-green-100 text-green-700 text-sm rounded-full">
-                {formData.fundCodes.length} fund{formData.fundCodes.length > 1 ? 's' : ''}
-              </span>
-            )}
-            {formData.departments.length > 0 && (
-              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-sm rounded-full">
-                {formData.departments.length} dept{formData.departments.length > 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+        {/* Compact Summary */}
+        {renderCompactSummary()}
 
-      {/* Bottom Action Buttons - Always at the bottom */}
-      <div className="px-2 pb-2">
-        <div className="flex justify-start gap-2 pt-2 border-t border-gray-200">
-          <button
-            onClick={toggleVoiceRecognition}
-            disabled={disabled}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-sm font-medium transition-colors ${
-              isListening ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-            title="Voice Command"
-          >
-            {isListening ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
-            {isListening ? 'Stop' : 'Voice'}
-          </button>
+        {/* Step Content */}
+        <div className="mb-1">
+          {renderStepContent()}
+        </div>
 
+        {/* Bottom Actions */}
+        <div className="flex items-center gap-2 pt-1 border-t border-gray-100">
           <button
             onClick={handleClear}
             disabled={disabled}
-            className="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm font-medium hover:bg-gray-200 transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded text-xs transition-colors disabled:opacity-50"
           >
             <X className="w-3 h-3" />
             Clear
           </button>
 
-          {(currentStep === 'funds' || currentStep === 'departments') && (
-            <button
-              onClick={handleSelectAll}
-              disabled={disabled}
-              className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-600 rounded text-sm font-medium hover:bg-blue-200 transition-colors"
-            >
-              <Check className="w-3 h-3" />
-              All
-            </button>
-          )}
-
-          {canProceed() && currentStep !== 'complete' && (
-            <button
-              onClick={handleNext}
-              disabled={disabled || loading}
-              className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Next'}
-              {!loading && <ChevronRight className="w-3 h-3" />}
-            </button>
-          )}
-
           {currentStep === 'complete' && (
             <button
               onClick={() => onParametersSubmit(formData)}
               disabled={disabled}
-              className="flex items-center gap-1 px-4 py-1 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
             >
               <Check className="w-3 h-3" />
               Generate

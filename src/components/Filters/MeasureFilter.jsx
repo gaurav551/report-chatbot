@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import SingleSlider from '../../ui/SingleSlider';
+import SingleSlider from '../ui/SingleSlider';
 import { X, ChevronDown, ChevronUp } from 'lucide-react';
-import RangeSlider from '../../ui/RangeSlider';
+import RangeSlider from '../ui/RangeSlider';
 
 // Utility function for value formatting
 const formatValue = (val) => {

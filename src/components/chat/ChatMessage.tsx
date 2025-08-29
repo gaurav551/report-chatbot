@@ -17,6 +17,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName, ses
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
+
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(message.text);
@@ -24,6 +25,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName, ses
       console.error('Failed to copy text:', error);
     }
   };
+
   const availableFiles = [
     { filename: 'yourfile.csv', type: 'CSV', displayName: 'CSV Data' },
     { filename: 'department_summary.json', type: 'JSON', displayName: 'JSON Data' },
@@ -170,13 +172,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName, ses
   return (
     <>
       <div className={`${message.type !== 'report' ? 'flex' : ''} ${message.isUser ? 'justify-end' : 'justify-start'} mb-4`}>
-        <div className={`px-4 py-2 rounded-2xl ${message.isUser ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm'}`}>
-          <div className="flex items-start space-x-2">
+        <div className={`px-2 py-2 rounded-2xl ${message.isUser ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm'}`}>
+          <div className="flex items-start">
             {!message.isUser && <Bot className="w-5 h-5 mt-0.5 text-blue-600 flex-shrink-0" />}
             
             <div className="flex-1">
               {message.type === 'report' && message.reportUrl ? (
-                <div className="space-y-2 relative">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="text-md">{message.text || 'Report generated successfully!'}</p>
                     <button
@@ -189,7 +191,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName, ses
                   </div>
 
                   {/* Iframe container (shared) */}
-                  <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4' : 'w-full h-[500px]'} transition-all`}>
+                  <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4' : 'w-full h-[500px] relative'} transition-all`}>
                     <div className={`bg-white rounded-lg border border-gray-200 w-full h-full max-w-7xl mx-auto overflow-hidden flex flex-col`}>
                       {isFullscreen && (
                         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
@@ -202,13 +204,26 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName, ses
                               title="Exit fullscreen"
                             >
                               <Minimize2 className="w-5 h-5" />
-                             
                             </button>
                           </div>
                         </div>
                       )}
                       <iframe src={message.reportUrl} className="w-full flex-1" title="Report" />
                     </div>
+
+                    {/* Minimal floating fullscreen toggle button - only show when not in fullscreen */}
+                    {!isFullscreen && (
+                      <button
+                        onClick={toggleFullscreen}
+                        className="absolute top-18 right-4 z-10 
+                                    bg-opacity-60 hover:bg-opacity-80 text-black
+                                   rounded-lg p-2 transition-all duration-200 ease-in-out
+                                   hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                        title="View fullscreen"
+                      >
+                        <Maximize2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
 
                   {!isFullscreen && renderDownloadButtons()}
@@ -220,13 +235,18 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName, ses
                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
-            {message.isUser && <> <button
+            {message.isUser && (
+              <div className="flex items-center space-x-1">
+                <button
                   onClick={copyToClipboard}
                   className="text-blue-200 hover:text-white transition-colors"
                   title="Copy message"
                 >
                   <Copy className="w-4 h-4" />
-                </button> <User className="w-5 h-5 text-blue-200 flex-shrink-0" /></>}
+                </button>
+                <User className="w-5 h-5 mt-0.5 text-blue-200 flex-shrink-0" />
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, ChevronDown, Loader2, AlertCircle, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import ModernSelect from '../../ui/ModernSelect';
-
+import ModernSelect from '../ui/ModernSelect';
 // API function to fetch dimensions
 const fetchDimensions = async () => {
   const userId = localStorage.getItem('user');

@@ -109,7 +109,7 @@ export const ChatInput = forwardRef<HTMLInputElement, {
           onKeyPress={handleKeyPress}
           disabled={serviceType==ServiceType.PRO? !chatEnabled : disabled}
           autoFocus
-          className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-100"
+          className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-100"
           placeholder={isListening ? "Listening..." : placeholder}
         />
         {speechSupported && isVoiceEnabled && (

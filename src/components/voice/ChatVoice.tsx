@@ -7,16 +7,16 @@ import {
   ChatSession,
   Message,
 } from "../../interfaces/Message";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Send } from "lucide-react";
 
 import { detectReportOutput } from "../../utils/detectReport";
 
 import { generateFilterMessage } from "../../utils/generateFIlterMessage";
 import { ReportGenerationRequest } from "../../interfaces/ReportGenerationRequest";
-import { ChatMessage } from "../chatv2/ChatMessage";
-import { ParameterForm, ParameterFormData } from "../chatv2/ParameterForm";
-import AdvanceFilter from "../chatv2/Filters/AdvanceFilter";
-import { ChatInput } from "../chatv2/ChatInput";
+import { ChatMessage } from "../chat/ChatMessage";
+import { ParameterForm, ParameterFormData } from "../chat/ParameterForm";
+import AdvanceFilter from "../Filters/AdvanceFilter";
+import { ChatInput } from "../chat/ChatInput";
 import { BubbleSuggestion } from "./BubbleSuggestion";
 import { ServiceType } from "../../const/serviceType";
 
@@ -363,7 +363,7 @@ const [filterParams, setFilterParams] = useState({
   }
 };
 
-  const handleMessage = async (messageText: string) => {
+  const handleMessage = async (messageText?: string) => {
     if (advanceFilterRef.current) {
       advanceFilterRef.current.handleSubmit();
     }
@@ -472,6 +472,21 @@ const [filterParams, setFilterParams] = useState({
             }
           />
 
+<div className="flex-shrink-0 bg-white border-t border-gray-200 px-2 py-1">
+        <ChatInput
+          onSendMessage={handleMessage}
+          disabled={
+            chatMutation.isPending ||
+            reportGenerationMutation.isPending ||
+            reportParams === null 
+           // !chatEnabled
+          }
+          chatEnabled={false}
+          serviceType={ServiceType.PRO}
+          placeholder={false ? "Type your message..." : "Chat is disabled for now, please set report parameters from selection above"}
+        />
+      </div>
+            
       {/* Chat Input - Sticky at bottom */}
       
     </div>

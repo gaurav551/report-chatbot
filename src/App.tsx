@@ -4,9 +4,9 @@ import Navbar from "./components/Navbar";
 import Home from "./components/Home";
 import NotFound from "./components/NotFound";
 import Footer from "./components/Footer";
-import Chat from "./components/chat/Chat";
-import ChatV2 from "./components/chatv2/Chat";
-Chat;
+import ChatV2 from "./components/chat/Chat";
+import { Forecasting } from "./components/forecasting/Forecasting";
+
 // Loading component for Suspense fallback
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-[400px]">
@@ -40,6 +40,7 @@ function App() {
 
 {/* User route with userName and userId parameters (new) */}
 <Route path="/user/:userName/:userId" element={<ChatV2 />} />
+                    <Route path="/forecasting" element={<Forecasting />} />
 
                     {/* Catch-all route for 404 - redirects to styled NotFound */}
                     <Route path="*" element={<NotFound />} />

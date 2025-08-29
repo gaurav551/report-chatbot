@@ -56,9 +56,14 @@ const AdvanceFilter = forwardRef(
       }
     };
 
+    const hideChatToggle = () => {
+      setIsExpanded(false);
+      setSelectedReportType('full');};
+
     // Expose handleSubmit method to parent component
     useImperativeHandle(ref, () => ({
       handleSubmit,
+      hideChatToggle
     }));
 
     const handleReportTypeChange = (reportType) => {
