@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ReferenceLine } from 'recharts';
 import { Brain, TrendingUp, TrendingDown, Zap, Target, Calendar, BarChart3, AlertTriangle } from 'lucide-react';
-
-export const Forecasting = () => {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-
-  // Prediction data with confidence intervals (moderate scenario)
-  const predictionData = [
+import { formatCurrency } from '../../utils/formatCurrency'
+export const predictionData = [
     // Historical data
     { year: '2020', revenue: 850000, expenses: 720000, confidence: 100, type: 'historical' },
     { year: '2021', revenue: 920000, expenses: 780000, confidence: 100, type: 'historical' },
@@ -48,6 +44,11 @@ export const Forecasting = () => {
       confidence: 51, type: 'prediction' 
     }
   ];
+export const Forecasting = () => {
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Prediction data with confidence intervals (moderate scenario)
+  
 
   const insights = [
     { metric: 'Revenue Growth Rate', predicted: '12.8%', confidence: 87 },
@@ -56,14 +57,7 @@ export const Forecasting = () => {
     { metric: 'Break-even Point', predicted: 'Month 14', confidence: 68 }
   ];
 
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
+  
 
   const runAnalysis = () => {
     setIsAnalyzing(true);
@@ -128,7 +122,7 @@ export const Forecasting = () => {
               Financial Forecasting
             </h1>
           </div>
-          <p className="text-gray-600">Revenue and expense predictions with confidence intervals</p>
+          <p className="text-gray-600">Revenue and expense predictions </p>
         </div>
 
         {/* Predictions */}
@@ -203,19 +197,19 @@ export const Forecasting = () => {
                   type="monotone" 
                   dataKey="revenue" 
                   stroke="#3b82f6" 
-                  strokeWidth={3}
+                  strokeWidth={2}
                   fill="url(#revenueGradient)"
                 />
                 <Line 
                   type="monotone" 
                   dataKey="expenses" 
                   stroke="#ef4444" 
-                  strokeWidth={3}
+                  strokeWidth={2}
                   strokeDasharray="8 4"
                 />
                 
                 {/* Reference line for current year */}
-                <ReferenceLine x="2024" stroke="#9ca3af" strokeDasharray="2 2" />
+                <ReferenceLine x="2025" stroke="#9ca3af" strokeDasharray="2 2" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

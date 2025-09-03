@@ -19,6 +19,7 @@ import AdvanceFilter from "../Filters/AdvanceFilter";
 import { ChatInput } from "../chat/ChatInput";
 import { BubbleSuggestion } from "./BubbleSuggestion";
 import { ServiceType } from "../../const/serviceType";
+import { initWorkspaceApi } from "../../services/chatService";
 
 const chatApi = async (params: ChatApiRequest): Promise<ChatApiResponse> => {
   const response = await axios.post("https://agentic.aiweaver.ai/chat", params);
@@ -273,12 +274,57 @@ const [filterParams, setFilterParams] = useState({
   };
 
   const handleParametersSubmit = async (params: ParameterFormData) => {
-    console.log("Parameters submitted:", params);
+    console.log("Parameters saved:", params);
     setReportParams(params);
+
+    const newMessage: Message = {
+    id: Date.now().toString(),
+    text: `Parameters saved with Year ${params.budgetYear}, Fund Code: ${params.fundCodes.join(", ")} and department ${params.departments.join(", ")}`,
+    type: "text",
+    isUser: true,
+    timestamp: new Date(),
+  };
+  setMessages((prev) => [...prev, newMessage]);
+  try {
+    const initParams = {
+      session_id: apiSessionId,
+      user_id: session?.userName ,
+      budget_years: [params.budgetYear],
+      fund_codes: params.fundCodes,
+      departments: params.departments
+    };
+    
+    console.log("Calling init-workspace API with params:", initParams);
+    const initResponse = await initWorkspaceApi(initParams);
+    console.log("Init workspace response:", initResponse);
+    
+    // Add success message to chat
+    // const successMessage: Message = {
+    //   id: Date.now().toString() + "_success",
+    //   text: "Workspace initialized successfully with your parameters.",
+    //   type: "text",
+    //   isUser: false,
+    //   timestamp: new Date(),
+    // };
+    // setMessages((prev) => [...prev, successMessage]);
     setParametersSubmitted(true);
 
-    // Generate report with current parameters and filters
-    await generateReport(params, filterParams);
+    
+  } catch (error) {
+    console.error("Error calling init-workspace API:", error);
+    setInitError("Failed to initialize workspace with parameters");
+    
+    // Add error message to chat
+    const errorMessage: Message = {
+      id: Date.now().toString() + "_error",
+      text: "Failed to initialize workspace. Please try again.",
+      type: "text",
+      isUser: false,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, errorMessage]);
+  }
+
   };
 
   const generateReport = async (
@@ -331,10 +377,11 @@ const [filterParams, setFilterParams] = useState({
   dimensionFiltersRevQuery: any,
   measureFiltersRevQuery: any,
   dimensionFilters: any,
-  measureFilters: any
+  measureFilters: any,
+  text:any
 ) => {
   // Create a message with the filter data
-  const filterText = generateFilterMessage(dimensionFilters, measureFilters);
+  const filterText = generateFilterMessage(dimensionFilters, measureFilters,text);
   
   const newMessage: Message = {
     id: Date.now().toString(),
@@ -453,7 +500,7 @@ const [filterParams, setFilterParams] = useState({
         )}
 
         {/* Advanced Filter - Inside scrollable area */}
-        {((messages.length > 0 && messages.some((msg) => msg.type === "report")) || chatCleared) && (
+        {((messages.length > 0 && parametersSubmitted) || chatCleared) && (
           <div >
             <AdvanceFilter
               ref={advanceFilterRef as any}
@@ -465,7 +512,9 @@ const [filterParams, setFilterParams] = useState({
           </div>
         )}
       </div>
-<BubbleSuggestion
+      {showParameterForm && apiSessionId && (
+        <div >
+          <BubbleSuggestion
             sessionId={apiSessionId}
             onParametersSubmit={handleParametersSubmit}
             disabled={
@@ -474,6 +523,9 @@ const [filterParams, setFilterParams] = useState({
               parametersSubmitted
             }
           />
+        </div>
+      )}
+
 
 <div className="flex-shrink-0 bg-white border-t border-gray-200 px-2 py-1">
         <ChatInput

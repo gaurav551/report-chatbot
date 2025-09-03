@@ -274,7 +274,14 @@ const [filterParams, setFilterParams] = useState({
     console.log("Parameters submitted:", params);
     setReportParams(params);
     setParametersSubmitted(true);
-
+      const newMessage: Message = {
+    id: Date.now().toString(),
+    text: `Parameters submitted with Year ${params.budgetYear}, Fund Code: ${params.fundCodes.join(", ")} and department ${params.departments.join(", ")}`,
+    type: "text",
+    isUser: true,
+    timestamp: new Date(),
+  };
+  setMessages((prev) => [...prev, newMessage]);
     // Generate report with current parameters and filters
     await generateReport(params, filterParams);
   };

@@ -6,6 +6,8 @@ import NotFound from "./components/NotFound";
 import Footer from "./components/Footer";
 import ChatV2 from "./components/chat/Chat";
 import { Forecasting } from "./components/forecasting/Forecasting";
+import  Analytics  from "./components/reports/Analytics";
+import SalesDashboard from "./components/forecasting/SalesDashboard";
 
 // Loading component for Suspense fallback
 const LoadingSpinner = () => (
@@ -40,7 +42,11 @@ function App() {
 
 {/* User route with userName and userId parameters (new) */}
 <Route path="/user/:userName/:userId" element={<ChatV2 />} />
-                    <Route path="/forecasting" element={<Forecasting />} />
+                    <Route path="/forecast" element={<Forecasting />} />
+                    <Route path="/analytics" element={<Analytics   />} />
+                   <Route path="/sales-dashboard" element={<SalesDashboard   />} />
+
+
 
                     {/* Catch-all route for 404 - redirects to styled NotFound */}
                     <Route path="*" element={<NotFound />} />
