@@ -168,22 +168,34 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
   const renderStepContent = () => {
     switch (currentStep) {
       case 'year':
+        const currentYear = new Date().getFullYear().toString();
+        
         return (
           <div className="flex flex-wrap gap-1">
-            {availableOptions.years.slice(0, 6).map(year => (
-              <button
-                key={year}
-                onClick={() => selectYear(year)}
-                disabled={disabled}
-                className={`px-3 py-1.5 text-sm font-medium rounded border transition-all ${
-                  formData.budgetYear === year
-                    ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-white border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50'
-                } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-              >
-                {year}
-              </button>
-            ))}
+            {availableOptions.years.slice(0, 6).map(year => {
+              const isCurrentYear = year === currentYear;
+              const isSelected = formData.budgetYear === year;
+              
+              return (
+                <button
+                  key={year}
+                  onClick={() => selectYear(year)}
+                  disabled={disabled}
+                  className={`px-3 py-1.5 text-sm font-medium rounded border transition-all relative ${
+                    isSelected
+                      ? 'bg-blue-50 border-blue-300 text-blue-700'
+                      : isCurrentYear
+                      ? 'bg-green-50 border-green-300 text-green-700 ring-2 ring-green-200'
+                      : 'bg-white border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50'
+                  } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  {year}
+                  {isCurrentYear && !isSelected && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         );
 
@@ -271,16 +283,8 @@ export const BubbleSuggestion: React.FC<BubbleSuggestionProps> = ({
           </button>
 
           {currentStep === 'complete' && (
-            // <button
-            //   onClick={() => onParametersSubmit(formData)}
-            //   disabled={disabled}
-            //   className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
-            // >
-            //   <Check className="w-3 h-3" />
-            //   Generate
-            // </button>
             <div className='text-sm text-gray-600'>
-            Parameters Saved
+              Parameters Saved
             </div>
           )}
         </div>
