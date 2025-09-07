@@ -8,6 +8,7 @@ import ChatV2 from "./components/chat/Chat";
 import { Forecasting } from "./components/forecasting/Forecasting";
 import  Analytics  from "./components/reports/Analytics";
 import SalesDashboard from "./components/forecasting/SalesDashboard";
+import ProtectedRoute from "./components/routes/ProtectedRoutes";
 
 // Loading component for Suspense fallback
 const LoadingSpinner = () => (
@@ -42,9 +43,32 @@ function App() {
 
 {/* User route with userName and userId parameters (new) */}
 <Route path="/user/:userName/:userId" element={<ChatV2 />} />
-                    <Route path="/forecast" element={<Forecasting />} />
-                    <Route path="/analytics" element={<Analytics   />} />
-                   <Route path="/sales-dashboard" element={<SalesDashboard   />} />
+              <Route 
+        path="/forecast" 
+        element={
+          <ProtectedRoute>
+            <Forecasting />
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route 
+        path="/analytics/:userId/:username" 
+        element={
+          <ProtectedRoute>
+            <Analytics />
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route 
+        path="/sales-dashboard" 
+        element={
+          <ProtectedRoute>
+            <SalesDashboard />
+          </ProtectedRoute>
+        } 
+      />
 
 
 

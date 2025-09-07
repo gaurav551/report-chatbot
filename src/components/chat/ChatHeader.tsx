@@ -93,7 +93,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
   // Handle forecasting navigation
   const handleForecastingClick = () => {
-    window.open('/analytics/', '_blank');
+    window.open(`/analytics/${apiSessionId}/${session.userName}`, '_blank');
   };
 
   // Master toggle button drag handlers

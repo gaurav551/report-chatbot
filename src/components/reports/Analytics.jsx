@@ -30,13 +30,17 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import { ReportBaseUrl } from '../../const/url';
+import { ReportBaseUrl, ReportFileName } from '../../const/url';
 import { predictionData } from '../forecasting/Forecasting';
 import { formatCurrency } from '../../utils/formatCurrency';
+import { useParams } from 'react-router-dom';
 
 // Fetch function
-const fetchAnalyticsData = async () => {
-  const response = await axios.get(`${ReportBaseUrl}/sampledata`);
+const fetchAnalyticsData = async ({ queryKey }) => {
+  const [_key, userId, userName] = queryKey;
+  const response = await axios.get(
+    `${ReportBaseUrl}charts/outputs/${userName}/${userId}/${ReportFileName}`
+  );
   return response.data;
 };
 
@@ -49,9 +53,10 @@ const Analytics = () => {
   const [activeChart, setActiveChart] = useState('overview');
   const [isVisible, setIsVisible] = useState(true);
   const [isExpanded, setIsExpanded] = useState(true);
+  const { userId, username: userName } = useParams();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['analyticsData'],
+    queryKey: ["analyticsData", userId, userName],
     queryFn: fetchAnalyticsData,
     enabled: true,
   });

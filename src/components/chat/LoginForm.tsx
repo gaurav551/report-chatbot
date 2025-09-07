@@ -39,6 +39,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     }
   });
 
+  // Clear localStorage when component mounts
+  useEffect(() => {
+    // Clear all authentication-related data from localStorage
+    localStorage.removeItem('user');
+    localStorage.removeItem('session_id');
+    
+    // Optional: Clear other app-specific data if needed
+    // localStorage.removeItem('authToken');
+    // localStorage.removeItem('refreshToken');
+    
+    // Or clear all localStorage (use with caution)
+    // localStorage.clear();
+  }, []);
+
   useEffect(() => {
     // Auto-submit with userId if present in params
     if (userName) {
