@@ -16,6 +16,7 @@ import AdvanceFilter from "../Filters/AdvanceFilter";
 import { generateFilterMessage } from "../../utils/generateFIlterMessage";
 import { ReportGenerationRequest } from "../../interfaces/ReportGenerationRequest";
 import { ServiceType } from "../../const/serviceType";
+import { initForecastWorkspaceApi } from "../../services/chatService";
 
 const chatApi = async (params: ChatApiRequest): Promise<ChatApiResponse> => {
   const response = await axios.post("https://agentic.aiweaver.ai/chat", params);
@@ -38,10 +39,10 @@ interface ChatMainProps {
   onMessagesChange: (messages: Message[]) => void;
 }
 
-export const ChatMain: React.FC<ChatMainProps> = ({ 
+export const ChatMain: React.FC<ChatMainProps> = ({
   session,
   onApiSessionIdChange,
-  onMessagesChange
+  onMessagesChange,
 }) => {
   const advanceFilterRef = useRef(null) as any;
 
@@ -53,21 +54,20 @@ export const ChatMain: React.FC<ChatMainProps> = ({
   const [parametersSubmitted, setParametersSubmitted] = useState(false);
   const [chatEnabled, setChatEnabled] = useState(false);
 
-  
   // Store form parameters for report generation
   const [reportParams, setReportParams] = useState<ParameterFormData | null>(
     null
   );
-const [filterParams, setFilterParams] = useState({
-  measures_requested_rev: null as string | null,
-  dimension_filter_rev: null as string | null,
-  measures_filter_rev: null as string | null,
-  measures_requested_exp: null as string | null,
-  dimension_filter_exp: null as string | null,
-  measures_filter_exp: null as string | null,
-  measureFilters: null as Record<string, any> | null,
-  dimensionFilters: null as Record<string, any> | null,
-});
+  const [filterParams, setFilterParams] = useState({
+    measures_requested_rev: null as string | null,
+    dimension_filter_rev: null as string | null,
+    measures_filter_rev: null as string | null,
+    measures_requested_exp: null as string | null,
+    dimension_filter_exp: null as string | null,
+    measures_filter_exp: null as string | null,
+    measureFilters: null as Record<string, any> | null,
+    dimensionFilters: null as Record<string, any> | null,
+  });
 
   const [showParameterForm, setShowParameterForm] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -91,9 +91,9 @@ const [filterParams, setFilterParams] = useState({
       clearChat();
     };
 
-    window.addEventListener('clearChat', handleClearChat);
+    window.addEventListener("clearChat", handleClearChat);
     return () => {
-      window.removeEventListener('clearChat', handleClearChat);
+      window.removeEventListener("clearChat", handleClearChat);
     };
   }, []);
 
@@ -106,7 +106,7 @@ const [filterParams, setFilterParams] = useState({
 
   const chatMutation = useMutation({
     mutationFn: chatApi,
-    onSuccess: (data: ChatApiResponse) => {
+    onSuccess: async (data: ChatApiResponse) => {
       if (data.session_id && data.session_id !== apiSessionId) {
         setApiSessionId(data.session_id);
       }
@@ -144,7 +144,7 @@ const [filterParams, setFilterParams] = useState({
 
   const reportGenerationMutation = useMutation({
     mutationFn: generateReportApi,
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
       console.log("Report generation success", data);
 
       const reportInfo = detectReportOutput(
@@ -161,6 +161,17 @@ const [filterParams, setFilterParams] = useState({
           "report",
           reportInfo.reportUrl
         );
+        try {
+          const forecastResult = await initForecastWorkspaceApi({
+            user_id: session.userName,
+            session_id: data.session_id || apiSessionId,
+            budgetYear: 2022, // or get this from your state/props if needed
+          });
+          console.log("Forecast workspace API success:", forecastResult);
+        } catch (error) {
+          console.error("Forecast workspace API error:", error);
+          // Handle error as needed - maybe show a warning but don't stop the flow
+        }
       } else {
         // If no report, just add the text response
         console.log("No report detected, adding text response");
@@ -241,15 +252,15 @@ const [filterParams, setFilterParams] = useState({
     setParametersSubmitted(false);
     setReportParams(null);
     setFilterParams({
-  measures_requested_rev: null,
-  dimension_filter_rev: null,
-  measures_filter_rev: null,
-  measures_requested_exp: null,
-  dimension_filter_exp: null,
-  measures_filter_exp: null,
-  measureFilters: null,
-  dimensionFilters: null,
-});
+      measures_requested_rev: null,
+      dimension_filter_rev: null,
+      measures_filter_rev: null,
+      measures_requested_exp: null,
+      dimension_filter_exp: null,
+      measures_filter_exp: null,
+      measureFilters: null,
+      dimensionFilters: null,
+    });
 
     // Initialize chat with API
     const timer = setTimeout(() => {
@@ -274,108 +285,114 @@ const [filterParams, setFilterParams] = useState({
     console.log("Parameters submitted:", params);
     setReportParams(params);
     setParametersSubmitted(true);
-      const newMessage: Message = {
-    id: Date.now().toString(),
-    text: `Parameters submitted with Year ${params.budgetYear}, Fund Code: ${params.fundCodes.join(", ")} and department ${params.departments.join(", ")}`,
-    type: "text",
-    isUser: true,
-    timestamp: new Date(),
-  };
-  setMessages((prev) => [...prev, newMessage]);
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      text: `Parameters submitted with Year ${
+        params.budgetYear
+      }, Fund Code: ${params.fundCodes.join(
+        ", "
+      )} and department ${params.departments.join(", ")}`,
+      type: "text",
+      isUser: true,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, newMessage]);
     // Generate report with current parameters and filters
     await generateReport(params, filterParams);
   };
 
   const generateReport = async (
-  params: ParameterFormData,
-  filters: typeof filterParams
-) => {
-  if (!apiSessionId) {
-    console.error("No session ID available");
-    addBotMessage(
-      "Error: No session ID available. Please refresh and try again."
+    params: ParameterFormData,
+    filters: typeof filterParams
+  ) => {
+    if (!apiSessionId) {
+      console.error("No session ID available");
+      addBotMessage(
+        "Error: No session ID available. Please refresh and try again."
+      );
+      return;
+    }
+    console.log(
+      "Generating report with parameters:",
+      params,
+      "and filters:",
+      filters
     );
-    return;
-  }
-  console.log(
-    "Generating report with parameters:",
-    params,
-    "and filters:",
-    filters
-  );
 
-  const reportRequest: ReportGenerationRequest = {
-    budget_years: [params.budgetYear],
-    fund_codes: params.fundCodes,
-    dept_ids: params.departments,
-    sessionId: apiSessionId,
-    userId: session.userName,
-    report_name: "rpt2",
-    measures_requested_rev: filters.measures_requested_rev,
-    dimension_filter_rev: filters.dimension_filter_rev,
-    measures_filter_rev: filters.measures_filter_rev,
-    measures_requested_exp: filters.measures_requested_exp,
-    dimension_filter_exp: filters.dimension_filter_exp,
-    measures_filter_exp: filters.measures_filter_exp,
-    measureFilters: filters.measureFilters,
-    dimensionFilters: filters.dimensionFilters,
+    const reportRequest: ReportGenerationRequest = {
+      budget_years: [params.budgetYear],
+      fund_codes: params.fundCodes,
+      dept_ids: params.departments,
+      sessionId: apiSessionId,
+      userId: session.userName,
+      report_name: "rpt2",
+      measures_requested_rev: filters.measures_requested_rev,
+      dimension_filter_rev: filters.dimension_filter_rev,
+      measures_filter_rev: filters.measures_filter_rev,
+      measures_requested_exp: filters.measures_requested_exp,
+      dimension_filter_exp: filters.dimension_filter_exp,
+      measures_filter_exp: filters.measures_filter_exp,
+      measureFilters: filters.measureFilters,
+      dimensionFilters: filters.dimensionFilters,
+    };
+
+    console.log("Generating report with:", reportRequest);
+
+    try {
+      await reportGenerationMutation.mutateAsync(reportRequest);
+    } catch (error) {
+      console.error("Error generating report:", error);
+    }
   };
-
-  console.log("Generating report with:", reportRequest);
-
-  try {
-    await reportGenerationMutation.mutateAsync(reportRequest);
-  } catch (error) {
-    console.error("Error generating report:", error);
-  }
-};
 
   const addFilterMessage = (
-  dimensionFiltersExpQuery: any,
-  measureFilterExpQuery: any,
-  dimensionFiltersRevQuery: any,
-  measureFiltersRevQuery: any,
-  dimensionFilters: any,
-  measureFilters: any,
-  text:any
-) => {
-  // Create a message with the filter data
-  const filterText = generateFilterMessage(dimensionFilters, measureFilters,text);
-  
-  const newMessage: Message = {
-    id: Date.now().toString(),
-    text: filterText,
-    type: "text",
-    isUser: true,
-    timestamp: new Date(),
+    dimensionFiltersExpQuery: any,
+    measureFilterExpQuery: any,
+    dimensionFiltersRevQuery: any,
+    measureFiltersRevQuery: any,
+    dimensionFilters: any,
+    measureFilters: any,
+    text: any
+  ) => {
+    // Create a message with the filter data
+    const filterText = generateFilterMessage(
+      dimensionFilters,
+      measureFilters,
+      text
+    );
+
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      text: filterText,
+      type: "text",
+      isUser: true,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, newMessage]);
+
+    // Update filter parameters with both string queries and JSON objects
+    const updatedFilters = {
+      measures_requested_rev: null,
+      dimension_filter_rev: dimensionFiltersRevQuery || null,
+      measures_filter_rev: measureFiltersRevQuery,
+      measures_requested_exp: null,
+      dimension_filter_exp: dimensionFiltersExpQuery,
+      measures_filter_exp: measureFilterExpQuery || null,
+      measureFilters: measureFilters || null,
+      dimensionFilters: dimensionFilters || null,
+    };
+    setFilterParams(updatedFilters);
+
+    // If parameters have been submitted, regenerate the report with new filters
+    if (reportParams && parametersSubmitted) {
+      generateReport(reportParams, updatedFilters);
+    }
   };
-  setMessages((prev) => [...prev, newMessage]);
-  
-  // Update filter parameters with both string queries and JSON objects
-  const updatedFilters = {
-    measures_requested_rev: null,
-    dimension_filter_rev: dimensionFiltersRevQuery || null,
-    measures_filter_rev: measureFiltersRevQuery,
-    measures_requested_exp: null,
-    dimension_filter_exp: dimensionFiltersExpQuery,
-    measures_filter_exp: measureFilterExpQuery || null,
-    measureFilters: measureFilters || null,
-    dimensionFilters: dimensionFilters || null,
-  };
-  setFilterParams(updatedFilters);
-  
-  // If parameters have been submitted, regenerate the report with new filters
-  if (reportParams && parametersSubmitted) {
-    generateReport(reportParams, updatedFilters);
-  }
-};
 
   const handleMessage = async (messageText: string) => {
-
     if (advanceFilterRef.current) {
       advanceFilterRef.current.handleSubmit(messageText);
       advanceFilterRef.current.hideChatToggle();
-
     }
   };
 
@@ -442,7 +459,9 @@ const [filterParams, setFilterParams] = useState({
             <div className="text-center text-gray-500">
               <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-400" />
               <p className="text-lg font-medium">Chat cleared</p>
-              <p className="text-sm">You can continue or start a new conversation</p>
+              <p className="text-sm">
+                You can continue or start a new conversation
+              </p>
             </div>
           </div>
         ) : (
@@ -458,8 +477,7 @@ const [filterParams, setFilterParams] = useState({
                 />
               </div>
             ))}
-            {(chatMutation.isPending ||
-              reportGenerationMutation.isPending) && (
+            {(chatMutation.isPending || reportGenerationMutation.isPending) && (
               <div className="flex items-center space-x-3 text-gray-500 px-4 py-3 bg-gray-50 rounded-xl max-w-sm">
                 <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
                 <span className="text-sm font-medium">
@@ -474,11 +492,13 @@ const [filterParams, setFilterParams] = useState({
         )}
 
         {/* Advanced Filter - Inside scrollable area */}
-        {((messages.length > 0 && messages.some((msg) => msg.type === "report")) || chatCleared) && (
-          <div >
+        {((messages.length > 0 &&
+          messages.some((msg) => msg.type === "report")) ||
+          chatCleared) && (
+          <div>
             <AdvanceFilter
               ref={advanceFilterRef as any}
-             // key={messages.length} // Reset internal state when messages change
+              // key={messages.length} // Reset internal state when messages change
               onFiltersApplied={addFilterMessage}
               onChatEnabledChange={setChatEnabled}
             />
@@ -493,12 +513,16 @@ const [filterParams, setFilterParams] = useState({
           disabled={
             chatMutation.isPending ||
             reportGenerationMutation.isPending ||
-            reportParams === null 
-           // !chatEnabled
+            reportParams === null
+            // !chatEnabled
           }
           chatEnabled={chatEnabled}
           serviceType={ServiceType.PRO}
-          placeholder={chatEnabled ? "Type your message..." : "Chat is disabled for now, please set report parameters from selection above"}
+          placeholder={
+            chatEnabled
+              ? "Type your message..."
+              : "Chat is disabled for now, please set report parameters from selection above"
+          }
         />
       </div>
     </div>

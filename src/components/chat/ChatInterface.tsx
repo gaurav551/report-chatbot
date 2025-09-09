@@ -7,6 +7,7 @@ import { detectReportOutput } from "../../utils/detectReport";
 import { ChatInput } from "./ChatInput";
 import { ServiceType } from "../../const/serviceType";
 import { ChatMessage } from "./ChatMessage";
+import { initForecastWorkspaceApi } from "../../services/chatService";
 const chatApi = async (params: ChatApiRequest): Promise<ChatApiResponse> => {
   const response = await axios.post("https://agentic.aiweaver.ai/chat", params);
   return response.data;
@@ -63,7 +64,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const chatMutation = useMutation({
     mutationFn: chatApi,
-    onSuccess: (data: ChatApiResponse) => {
+    onSuccess:async (data: ChatApiResponse) => {
       if (data.session_id && data.session_id !== apiSessionId) {
         setApiSessionId(data.session_id);
       }
@@ -73,6 +74,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       if (reportInfo && reportInfo.hasReport) {
         addBotMessage('Report generated successfully! You can view it below and download the files.', 'report', reportInfo.reportUrl);
+         try {
+                  const forecastResult = await initForecastWorkspaceApi({
+                    user_id: session.userName,
+                    session_id: data.session_id || apiSessionId,
+                    budgetYear: 2022, // or get this from your state/props if needed
+                  });
+                  console.log("Forecast workspace API success:", forecastResult);
+                } catch (error) {
+                  console.error("Forecast workspace API error:", error);
+                  // Handle error as needed - maybe show a warning but don't stop the flow
+                }
       } else {
         addBotMessage(data.reply);
       }

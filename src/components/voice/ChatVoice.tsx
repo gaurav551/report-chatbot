@@ -19,20 +19,10 @@ import AdvanceFilter from "../Filters/AdvanceFilter";
 import { ChatInput } from "../chat/ChatInput";
 import { BubbleSuggestion } from "./BubbleSuggestion";
 import { ServiceType } from "../../const/serviceType";
-import { initWorkspaceApi } from "../../services/chatService";
+import { generateReportApi, initForecastWorkspaceApi, initWorkspaceApi } from "../../services/chatService";
 
 const chatApi = async (params: ChatApiRequest): Promise<ChatApiResponse> => {
   const response = await axios.post("https://agentic.aiweaver.ai/chat", params);
-  return response.data;
-};
-
-const generateReportApi = async (
-  params: ReportGenerationRequest
-): Promise<any> => {
-  const response = await axios.post(
-    "https://agentic.aiweaver.ai/api/rpt2/generate-report",
-    params
-  );
   return response.data;
 };
 
@@ -147,7 +137,7 @@ const [filterParams, setFilterParams] = useState({
 
   const reportGenerationMutation = useMutation({
     mutationFn: generateReportApi,
-    onSuccess: (data: any) => {
+    onSuccess: async(data: any) => {
       console.log("Report generation success", data);
 
       const reportInfo = detectReportOutput(
@@ -158,7 +148,18 @@ const [filterParams, setFilterParams] = useState({
 
       if (reportInfo && reportInfo.hasReport) {
         console.log("reportInfo", reportInfo);
-
+       
+        try {
+          const forecastResult = await initForecastWorkspaceApi({
+            user_id: session.userName,
+            session_id: data.session_id || apiSessionId,
+            budgetYear: 2022, // or get this from your state/props if needed
+          });
+          console.log("Forecast workspace API success:", forecastResult);
+        } catch (error) {
+          console.error("Forecast workspace API error:", error);
+          // Handle error as needed - maybe show a warning but don't stop the flow
+        }
         addBotMessage(
           "Report generated successfully! You can view it below and download the files.",
           "report",

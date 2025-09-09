@@ -34,6 +34,8 @@ import { ReportBaseUrl, ReportFileName } from '../../const/url';
 import { predictionData } from '../forecasting/Forecasting';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { useParams } from 'react-router-dom';
+import { RevenueExpenseForecast } from './RevenueExpenseForecast';
+import { AnalyticsSkeleton } from './AnalyticsSkeleton';
 
 // Fetch function
 const fetchAnalyticsData = async ({ queryKey }) => {
@@ -221,10 +223,7 @@ const Analytics = () => {
         } overflow-hidden`}>
           <div className="p-4 sm:p-6">
             {isLoading && (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin text-blue-600 mr-3" />
-                <span className="text-gray-600 text-lg">Loading analytics data...</span>
-              </div>
+             <AnalyticsSkeleton/>
             )}
 
             {error && (
@@ -430,59 +429,7 @@ const Analytics = () => {
                     </div>
                   )}
                 </div>
-                  <div className="bg-white rounded-lg p-6 mb-8 shadow border border-gray-200">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-                              <h2 className="text-2xl font-bold text-gray-900 mb-4 sm:mb-0">
-                                Revenue & Expense Forecast
-                              </h2>
-                              <div className="flex items-center space-x-4">
-                                <div className="flex items-center text-sm text-gray-600">
-                                  <div className="w-3 h-3 bg-blue-500 rounded mr-2"></div>
-                                  Revenue
-                                </div>
-                                <div className="flex items-center text-sm text-gray-600">
-                                  <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
-                                  Expenses
-                                </div>
-                              </div>
-                            </div>
-                  
-                            <div className="h-96">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={predictionData}>
-                                  <defs>
-                                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05}/>
-                                    </linearGradient>
-                                  </defs>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                                  <XAxis dataKey="year" stroke="#6b7280" />
-                                  <YAxis tickFormatter={formatCurrency} stroke="#6b7280" />
-                            <Tooltip content={<CustomTooltip />} />
-                                  
-                                  {/* Main prediction lines */}
-                                  <Area 
-                                    type="monotone" 
-                                    dataKey="revenue" 
-                                    stroke="#3b82f6" 
-                                    strokeWidth={3}
-                                    fill="url(#revenueGradient)"
-                                  />
-                                  <Line 
-                                    type="monotone" 
-                                    dataKey="expenses" 
-                                    stroke="#ef4444" 
-                                    strokeWidth={3}
-                                    strokeDasharray="8 4"
-                                  />
-                                  
-                                  {/* Reference line for current year */}
-                                  <ReferenceLine x="2024" stroke="#9ca3af" strokeDasharray="2 2" />
-                                </AreaChart>
-                              </ResponsiveContainer>
-                            </div>
-                          </div>
+                <RevenueExpenseForecast CustomTooltip ={CustomTooltip} sessionId={userId} userName={userName} />
                 {/* Summary Table */}
                 <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                   <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
