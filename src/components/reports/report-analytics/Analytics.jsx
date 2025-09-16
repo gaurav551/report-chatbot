@@ -30,11 +30,11 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import { ReportBaseUrl, ReportFileName } from '../../const/url';
-import { predictionData } from '../forecasting/Forecasting';
-import { formatCurrency } from '../../utils/formatCurrency';
+import { ReportBaseUrl, ReportFileName } from '../../../const/url';
+import { predictionData } from '../../forecasting/Forecasting';
+import { formatCurrency } from '../../../utils/formatCurrency';
 import { useParams } from 'react-router-dom';
-import { RevenueExpenseForecast } from './RevenueExpenseForecast';
+import { RevenueExpenseForecast } from '../forecast/RevenueExpenseForecast';
 import { AnalyticsSkeleton } from './AnalyticsSkeleton';
 
 // Fetch function

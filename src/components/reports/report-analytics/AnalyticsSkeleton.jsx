@@ -18,18 +18,7 @@ export const AnalyticsSkeleton = () => {
   return (
     <div className="w-full max-w-7xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Circle size="20px" className="bg-white/30" />
-            <Skeleton width="250px" height="24px" className="bg-white/30" />
-          </div>
-          <div className="flex items-center space-x-2">
-            <Circle size="32px" className="bg-white/20" />
-            <Circle size="32px" className="bg-white/20" />
-          </div>
-        </div>
-      </div>
+     
 
       {/* Content */}
       <div className="p-4 sm:p-6 space-y-6">

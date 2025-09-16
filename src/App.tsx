@@ -6,9 +6,9 @@ import NotFound from "./components/NotFound";
 import Footer from "./components/Footer";
 import ChatV2 from "./components/chat/Chat";
 import { Forecasting } from "./components/forecasting/Forecasting";
-import  Analytics  from "./components/reports/Analytics";
 import SalesDashboard from "./components/forecasting/SalesDashboard";
 import ProtectedRoute from "./components/routes/ProtectedRoutes";
+import Analytics from "./components/reports/report-analytics/Analytics";
 
 // Loading component for Suspense fallback
 const LoadingSpinner = () => (
