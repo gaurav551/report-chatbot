@@ -52,7 +52,7 @@ const fetchAnalyticsData = async ({ queryKey }) => {
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#F97316'];
 
 const Analytics = () => {
-  const [activeChart, setActiveChart] = useState('overview');
+  const [activeChart, setActiveChart] = useState('forecast');
   const [isVisible, setIsVisible] = useState(true);
   const [isExpanded, setIsExpanded] = useState(true);
   const { userId, username: userName } = useParams();
@@ -263,6 +263,7 @@ const Analytics = () => {
                 {/* Chart Navigation */}
                 <div className="flex flex-wrap gap-1 sm:gap-2 border-b border-gray-200 pb-4">
                   {[
+                    { key: 'forecast', label: 'Forecast', icon: TrendingUp },
                     { key: 'overview', label: 'Budget vs Actual Overview', icon: BarChart3 },
                     { key: 'expenses', label: 'Expense Breakdown', icon: TrendingUp },
                     { key: 'revenue', label: 'Revenue by Department', icon: PieChartIcon }
@@ -344,7 +345,13 @@ const Analytics = () => {
                       </div>
                     </div>
                   )}
+{activeChart == "forecast" && (
+                  <>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense/Revenue Distribution Forecasting</h3>
 
+                  <RevenueExpenseForecast CustomTooltip ={CustomTooltip} sessionId={userId} userName={userName} />
+                  </>
+                )}
                   {activeChart === 'revenue' && (
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Distribution by Department</h3>
@@ -429,7 +436,7 @@ const Analytics = () => {
                     </div>
                   )}
                 </div>
-                <RevenueExpenseForecast CustomTooltip ={CustomTooltip} sessionId={userId} userName={userName} />
+                
                 {/* Summary Table */}
                 <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                   <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">

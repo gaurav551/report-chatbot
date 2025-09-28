@@ -3,63 +3,142 @@ import MultiSelectDropdown from '../../ui/MultiSelectDropdown';
 
 const API_BASE_URL = 'https://agentic.aiweaver.ai/api';
 
-export const RevenueExpenseForecastFilter = ({ onFiltersChange, initialFilters = { fundCodes: [], departments: [], accounts: [] } }) => {
+export const RevenueExpenseForecastFilter = ({ 
+  onFiltersChange, 
+  initialFilters = { 
+    fundCodes: [], 
+    rollupDepartments: [], 
+    departments: [],
+    accounts: [],
+    pastYears: [],
+    forecastMethods: []
+  } 
+}) => {
   const [filters, setFilters] = useState(initialFilters);
 
   const [availableOptions, setAvailableOptions] = useState({
     fundCodes: [],
+    rollupDepartments: [],
     departments: [],
     accounts: [],
+    pastYears: [
+      ['all', 'All Years'],
+      ['1', '1 Year'],
+      ['2', '2 Years'],
+      ['3', '3 Years'],
+      ['4', '4 Years'],
+      ['5', '5 Years']
+    ],
+    forecastMethods: [
+      ['all', 'All Methods'],
+      ['linear', 'Linear'],
+      ['YoY', 'Year over Year'],
+      ['3monthAvg', '3 Month Average']
+    ]
   });
 
   const [loading, setLoading] = useState({
     dimensions: false,
   });
 
-  // Fetch all dimensions from the new API
-  useEffect(() => {
-    const loadDimensions = async () => {
-      try {
-        setLoading((prev) => ({ ...prev, dimensions: true }));
-        
-        // Get user and session_id from localStorage
-        const userId = localStorage.getItem('user') || 'Raj';
-        const sessionId = localStorage.getItem('session_id') || '922a20f5f7d64a2344ebc4cda95ef0f4';
-        
-        const url = `${API_BASE_URL}/rpt2/forecast-dimensions?user_id=${encodeURIComponent(userId)}&session_id=${encodeURIComponent(sessionId)}`;
-        
-        const res = await fetch(url);
-        
-        if (!res.ok) {
-          throw new Error(`API request failed with status ${res.status}`);
-        }
-        
-        const data = await res.json();
-        
-        // Extract the required dimensions and format them for MultiSelectDropdown
-        const formatDimension = (dimensionArray) => {
-          return dimensionArray.map(item => [item.code, item.label || item.code]);
-        };
-        
-        setAvailableOptions({
-          fundCodes: data.dimensions?.fund_code ? formatDimension(data.dimensions.fund_code) : [],
-          departments: data.dimensions?.parent_deptid ? formatDimension(data.dimensions.parent_deptid) : [],
-          accounts: data.dimensions?.account ? formatDimension(data.dimensions.account) : [],
-        });
-        
-      } catch (err) {
-        console.error('Error loading dimensions:', err);
-        // Set empty arrays as fallback
-        setAvailableOptions({
-          fundCodes: [],
-          departments: [],
-          accounts: [],
-        });
-      } finally {
-        setLoading((prev) => ({ ...prev, dimensions: false }));
-      }
-    };
+  // Clear data function
+  const clearAllData = () => {
+    setFilters(initialFilters);
+    setAvailableOptions({
+      fundCodes: [],
+      rollupDepartments: [],
+      departments: [],
+      accounts: [],
+      pastYears: [
+        ['all', 'All Years'],
+        ['1', '1 Year'],
+        ['2', '2 Years'],
+        ['3', '3 Years'],
+        ['4', '4 Years'],
+        ['5', '5 Years']
+      ],
+      forecastMethods: [
+        ['all', 'All Methods'],
+        ['linear', 'Linear'],
+        ['YoY', 'Year over Year'],
+        ['3monthAvg', '3 Month Average']
+      ]
+    });
+    setLoading({
+      dimensions: false,
+    });
+  };
 
+  // Clear all filters function
+  const clearAllFilters = () => {
+    const clearedFilters = { 
+      fundCodes: [], 
+      rollupDepartments: [], 
+      departments: [],
+      accounts: [],
+      pastYears: [],
+      forecastMethods: []
+    };
+    setFilters(clearedFilters);
+  };
+
+  // Check if any filters are selected
+  const hasActiveFilters = filters.fundCodes.length > 0 || 
+                          filters.rollupDepartments?.length > 0 || 
+                          filters.departments.length > 0 ||
+                          filters.accounts.length > 0 ||
+                          filters.pastYears?.length > 0 ||
+                          filters.forecastMethods?.length > 0;
+
+  // Fetch all dimensions from the API
+  const loadDimensions = async () => {
+    try {
+      setLoading((prev) => ({ ...prev, dimensions: true }));
+      
+      // Get user and session_id from localStorage
+      const userId = localStorage.getItem('user');
+      const sessionId = localStorage.getItem('session_id');
+      
+      const url = `${API_BASE_URL}/rpt2/forecast-dimensions?user_id=${encodeURIComponent(userId)}&session_id=${encodeURIComponent(sessionId)}`;
+      
+      const res = await fetch(url);
+      
+      if (!res.ok) {
+        throw new Error(`API request failed with status ${res.status}`);
+      }
+      
+      const data = await res.json();
+      
+      // Extract the required dimensions and format them for MultiSelectDropdown
+      const formatDimension = (dimensionArray) => {
+        return dimensionArray.map(item => [item.code, item.label || item.code]);
+      };
+      
+      setAvailableOptions(prev => ({
+        ...prev,
+        fundCodes: data.dimensions?.fund_code ? formatDimension(data.dimensions.fund_code) : [],
+        rollupDepartments: data.dimensions?.parent_deptid ? formatDimension(data.dimensions.parent_deptid) : [],
+        departments: data.dimensions?.deptid ? formatDimension(data.dimensions.deptid) : [],
+        accounts: data.dimensions?.account ? formatDimension(data.dimensions.account) : [],
+      }));
+      
+    } catch (err) {
+      console.error('Error loading dimensions:', err);
+      // Set empty arrays as fallback (keeping static options)
+      setAvailableOptions(prev => ({
+        ...prev,
+        fundCodes: [],
+        rollupDepartments: [],
+        departments: [],
+        accounts: [],
+      }));
+    } finally {
+      setLoading((prev) => ({ ...prev, dimensions: false }));
+    }
+  };
+
+  // Initial load of dimensions
+  useEffect(() => {
     loadDimensions();
   }, []);
 
@@ -68,60 +147,74 @@ export const RevenueExpenseForecastFilter = ({ onFiltersChange, initialFilters =
     onFiltersChange(filters);
   }, [filters, onFiltersChange]);
 
-  // Handle fund code changes
+  // Generic handler for filter changes
+  const handleFilterChange = (filterKey, optionValue, isSelected) => {
+    setFilters((prev) => {
+      let updatedValues = [];
+      const currentValues = prev[filterKey];
+      const availableValues = availableOptions[filterKey];
+
+      if (optionValue === 'ALL') {
+        updatedValues = isSelected ? availableValues.map(([val]) => val) : [];
+      } else {
+        updatedValues = isSelected
+          ? [...currentValues, optionValue]
+          : currentValues.filter((v) => v !== optionValue);
+      }
+
+      return {
+        ...prev,
+        [filterKey]: updatedValues
+      };
+    });
+  };
+
+  // Individual handler functions
   const handleFundCodeChange = (code, isSelected) => {
-    let updatedCodes = [];
-
-    if (code === 'ALL') {
-      updatedCodes = isSelected ? availableOptions.fundCodes.map(([val]) => val) : [];
-    } else {
-      updatedCodes = isSelected
-        ? [...filters.fundCodes, code]
-        : filters.fundCodes.filter((c) => c !== code);
-    }
-
-    setFilters((prev) => ({ 
-      ...prev, 
-      fundCodes: updatedCodes
-    }));
+    handleFilterChange('fundCodes', code, isSelected);
   };
 
-  // Handle department changes
+  const handleRollupDepartmentChange = (dept, isSelected) => {
+    handleFilterChange('rollupDepartments', dept, isSelected);
+  };
+
   const handleDepartmentChange = (dept, isSelected) => {
-    let updatedDepts = [];
-
-    if (dept === 'ALL') {
-      updatedDepts = isSelected ? availableOptions.departments.map(([val]) => val) : [];
-    } else {
-      updatedDepts = isSelected
-        ? [...filters.departments, dept]
-        : filters.departments.filter((d) => d !== dept);
-    }
-
-    setFilters((prev) => ({ ...prev, departments: updatedDepts }));
+    handleFilterChange('departments', dept, isSelected);
   };
 
-  // Handle account changes
   const handleAccountChange = (account, isSelected) => {
-    let updatedAccounts = [];
+    handleFilterChange('accounts', account, isSelected);
+  };
 
-    if (account === 'ALL') {
-      updatedAccounts = isSelected ? availableOptions.accounts.map(([val]) => val) : [];
-    } else {
-      updatedAccounts = isSelected
-        ? [...filters.accounts, account]
-        : filters.accounts.filter((a) => a !== account);
-    }
+  const handlePastYearsChange = (years, isSelected) => {
+    handleFilterChange('pastYears', years, isSelected);
+  };
 
-    setFilters((prev) => ({ ...prev, accounts: updatedAccounts }));
+  const handleForecastMethodChange = (method, isSelected) => {
+    handleFilterChange('forecastMethods', method, isSelected);
   };
 
   const isLoading = loading.dimensions;
 
   return (
     <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-      <h3 className="text-sm font-medium text-gray-700 mb-3">Filters</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-sm font-medium text-gray-700">Analysis by Dimensions</h3>
+        <button
+          onClick={clearAllFilters}
+          disabled={!hasActiveFilters || isLoading}
+          className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200 ${
+            hasActiveFilters && !isLoading
+              ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 hover:text-red-800'
+              : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
+          }`}
+        >
+          Clear All
+        </button>
+      </div>
+      
+      {/* First Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {/* Fund Codes Filter */}
         <div>
           <MultiSelectDropdown
@@ -136,7 +229,21 @@ export const RevenueExpenseForecastFilter = ({ onFiltersChange, initialFilters =
           />
         </div>
 
-        {/* Departments Filter */}
+        {/* Rollup Departments Filter (formerly Departments) */}
+        <div>
+          <MultiSelectDropdown
+            label="Rollup Departments"
+            value={filters.rollupDepartments}
+            options={availableOptions.rollupDepartments}
+            loading={isLoading}
+            disabled={isLoading}
+            placeholder={isLoading ? "Loading..." : "Select Rollup Departments"}
+            onChange={handleRollupDepartmentChange}
+            showSelectAll={true}
+          />
+        </div>
+
+        {/* Departments Filter (new - child departments) */}
         <div>
           <MultiSelectDropdown
             label="Departments"
@@ -149,7 +256,10 @@ export const RevenueExpenseForecastFilter = ({ onFiltersChange, initialFilters =
             showSelectAll={true}
           />
         </div>
+      </div>
 
+      {/* Second Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Accounts Filter */}
         <div>
           <MultiSelectDropdown
@@ -160,6 +270,34 @@ export const RevenueExpenseForecastFilter = ({ onFiltersChange, initialFilters =
             disabled={isLoading}
             placeholder={isLoading ? "Loading..." : "Select Accounts"}
             onChange={handleAccountChange}
+            showSelectAll={true}
+          />
+        </div>
+
+        {/* Past Years Filter */}
+        <div>
+          <MultiSelectDropdown
+            label="Past Years"
+            value={filters.pastYears}
+            options={availableOptions.pastYears}
+            loading={false}
+            disabled={false}
+            placeholder="Select Past Years"
+            onChange={handlePastYearsChange}
+            showSelectAll={true}
+          />
+        </div>
+
+        {/* Forecast Method Filter */}
+        <div>
+          <MultiSelectDropdown
+            label="Forecast Method"
+            value={filters.forecastMethods}
+            options={availableOptions.forecastMethods}
+            loading={false}
+            disabled={false}
+            placeholder="Select Forecast Method"
+            onChange={handleForecastMethodChange}
             showSelectAll={true}
           />
         </div>

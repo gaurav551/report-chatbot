@@ -92,9 +92,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   };
 
   // Handle forecasting navigation
-  const handleForecastingClick = () => {
-    window.open(`/analytics/${apiSessionId}/${session.userName}`, '_blank');
-  };
+  
 
   // Master toggle button drag handlers
   const handleMasterToggleMouseDown = (e: React.MouseEvent) => {
@@ -188,63 +186,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       {/* Top Control Buttons */}
-      {hasReportMessages && (
-        <div className="fixed top-4 z-30 flex items-center space-x-3">
-          {/* Master Toggle Button - Draggable */}
-          <div 
-            className="transition-all duration-200"
-            style={{ 
-              transform: `translateX(${masterToggleX - 50}vw)`
-            }}
-          >
-            <button
-              onMouseDown={handleMasterToggleMouseDown}
-              className={`
-                text-white p-3 rounded-full shadow-lg transition-all duration-300 
-                transform hover:scale-110 active:scale-95 relative
-                ${isMasterToggleDragging ? 'cursor-grabbing scale-110' : 'cursor-grab'}
-                ${(leftSidebarVisible || rightSidebarVisible)
-                  ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/25' 
-                  : 'bg-gray-500 hover:bg-indigo-600 shadow-gray-500/25'
-                }
-              `}
-              title="Toggle Both Panels (Drag to move horizontally)"
-            >
-              <Columns3 className="w-5 h-5" />
-              
-              <div className={`
-                absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white 
-                transition-all duration-200
-                ${isMasterToggleDragging ? 'bg-yellow-400 opacity-100' : 'bg-white/30 opacity-0 hover:opacity-100'}
-              `}>
-                <div className="w-full h-full rounded-full bg-white/50" />
-              </div>
-            </button>
-            
-            {/* Horizontal movement guidelines */}
-            {isMasterToggleDragging && (
-              <>
-                <div className="fixed top-0 bottom-0 w-0.5 bg-white/20 pointer-events-none" style={{ left: '10%' }} />
-                <div className="fixed top-0 bottom-0 w-0.5 bg-white/20 pointer-events-none" style={{ left: '50%' }} />
-                <div className="fixed top-0 bottom-0 w-0.5 bg-white/20 pointer-events-none" style={{ left: '90%' }} />
-              </>
-            )}
-          </div>
-
-          {/* Forecasting Button */}
-          <button
-            onClick={handleForecastingClick}
-            className="
-              text-white p-3 rounded-full shadow-lg transition-all duration-300 
-              transform hover:scale-110 active:scale-95
-              bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/25
-            "
-            title="Open Forecasting (New Tab)"
-          >
-            <TrendingUp className="w-5 h-5" />
-          </button>
-        </div>
-      )}
+      
 
       <ChatLayout
         // Panel visibility and sizing
@@ -255,6 +197,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         chatFixedWidth={chatFixedWidth}
         setLeftPanelWidth={setLeftPanelWidth}
         setRightPanelWidth={setRightPanelWidth}
+        toggleBothSidebars={handleMasterToggleMouseDown}
         
         // State and handlers
         hasReportMessages={hasReportMessages}

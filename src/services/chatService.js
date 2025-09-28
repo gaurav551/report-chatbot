@@ -35,15 +35,18 @@ export const initForecastWorkspaceApi = async ({ user_id, session_id, budgetYear
 export const getSalesFcast = async ({ 
   user_id = "", 
   session_id = "", 
-  budget_year = "2025", 
+  as_of_date = "", 
   fund_code = [], 
-  deptid = [], 
+  rollup_deptid = [], // new - for rollup departments
+  deptid = [], // existing - now for child departments
+  account = [],
+  past_years = [], // new
+  forecast_method = [], // new
   group_by = true, 
   include_forecast = true, 
   forecast_fallback = true, 
   limit = 1000, 
-  offset = 0 ,
-  account = []
+  offset = 0
 }) => {
   try {
     // Ensure required fields are not empty
@@ -55,18 +58,35 @@ export const getSalesFcast = async ({
     const params = new URLSearchParams();
     params.append('user_id', user_id.toString());
     params.append('session_id', session_id.toString());
-    params.append('budget_year', budget_year.toString());
+    params.append('as_of_date', as_of_date.toString());
     
     // Handle arrays by adding multiple values with same key
     if (Array.isArray(fund_code) && fund_code.length > 0) {
       fund_code.forEach(code => params.append('fund_code', code.toString()));
     }
+    
     if (Array.isArray(account) && account.length > 0) {
       account.forEach(code => params.append('account', code.toString()));
     }
     
+    // Parent department IDs (rollup departments)
+    if (Array.isArray(rollup_deptid) && rollup_deptid.length > 0) {
+      rollup_deptid.forEach(dept => params.append('rollup_deptid', dept.toString()));
+    }
+    
+    // Child department IDs
     if (Array.isArray(deptid) && deptid.length > 0) {
       deptid.forEach(dept => params.append('deptid', dept.toString()));
+    }
+    
+    // Past years filter
+    if (Array.isArray(past_years) && past_years.length > 0) {
+      past_years.forEach(year => params.append('past_years', year.toString()));
+    }
+    
+    // Forecast method filter
+    if (Array.isArray(forecast_method) && forecast_method.length > 0) {
+      forecast_method.forEach(method => params.append('forecast_method', method.toString()));
     }
     
     params.append('group_by', Boolean(group_by).toString());
@@ -90,8 +110,3 @@ export const getSalesFcast = async ({
     throw error;
   }
 };
-// Example usage with the provided parameters structure
-
-
-// Call the function
-// const result = await initWorkspaceApi(exampleParams);
