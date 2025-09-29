@@ -55,9 +55,9 @@ function App() {
       <Route 
         path="/analytics/:userId/:username" 
         element={
-          <ProtectedRoute>
+          <>
             <Analytics />
-          </ProtectedRoute>
+          </>
         } 
       />
       

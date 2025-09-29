@@ -40,7 +40,7 @@ export const getSalesFcast = async ({
   rollup_deptid = [], // new - for rollup departments
   deptid = [], // existing - now for child departments
   account = [],
-  past_years = [], // new
+  past_years = '3', // new
   forecast_method = [], // new
   group_by = true, 
   include_forecast = true, 
@@ -59,7 +59,8 @@ export const getSalesFcast = async ({
     params.append('user_id', user_id.toString());
     params.append('session_id', session_id.toString());
     params.append('as_of_date', as_of_date.toString());
-    
+    params.append('past_years', past_years.toString() || '3');
+
     // Handle arrays by adding multiple values with same key
     if (Array.isArray(fund_code) && fund_code.length > 0) {
       fund_code.forEach(code => params.append('fund_code', code.toString()));
@@ -79,10 +80,7 @@ export const getSalesFcast = async ({
       deptid.forEach(dept => params.append('deptid', dept.toString()));
     }
     
-    // Past years filter
-    if (Array.isArray(past_years) && past_years.length > 0) {
-      past_years.forEach(year => params.append('past_years', year.toString()));
-    }
+    
     
     // Forecast method filter
     if (Array.isArray(forecast_method) && forecast_method.length > 0) {

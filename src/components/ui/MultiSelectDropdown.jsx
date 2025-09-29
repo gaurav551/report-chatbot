@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Search, X, Check } from 'lucide-react';
 
@@ -11,7 +10,9 @@ const MultiSelectDropdown = ({
   placeholder = 'Select options',
   onChange,
   color = 'blue',
-  showSelectAll = false
+  showSelectAll = false,
+  singleSelect = false, // New prop for single selection mode
+  showDescription = true
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,11 +62,25 @@ const MultiSelectDropdown = ({
   }, []);
 
   const handleOptionToggle = (optionVal) => {
-    const isSelected = value.includes(optionVal);
-    onChange?.(optionVal, !isSelected);
+    if (singleSelect) {
+      // For single select, replace the current selection
+      const isSelected = value.includes(optionVal);
+      if (!isSelected) {
+        onChange?.(optionVal, true);
+        setIsOpen(false); // Close dropdown after selection
+      } else {
+        onChange?.(optionVal, false); // Allow deselecting
+      }
+    } else {
+      // For multi-select, toggle the option
+      const isSelected = value.includes(optionVal);
+      onChange?.(optionVal, !isSelected);
+    }
   };
 
   const handleSelectAll = () => {
+    if (singleSelect) return; // Don't allow select all for single select
+    
     const allSelected = filteredOptions.every(([val]) => value.includes(val));
     onChange?.('ALL', !allSelected);
   };
@@ -75,7 +90,15 @@ const MultiSelectDropdown = ({
   };
 
   const clearAll = () => {
-    value.forEach((v) => onChange?.(v, false));
+    if (singleSelect) {
+      // For single select, clear the single value
+      if (value.length > 0) {
+        onChange?.(value[0], false);
+      }
+    } else {
+      // For multi-select, clear all values
+      value.forEach((v) => onChange?.(v, false));
+    }
   };
 
   const allFilteredSelected =
@@ -83,6 +106,25 @@ const MultiSelectDropdown = ({
     filteredOptions.every(([val]) => value.includes(val));
   const someFilteredSelected =
     filteredOptions.some(([val]) => value.includes(val));
+
+  // Get display text for single select
+  const getDisplayText = () => {
+    if (value.length === 0) {
+      return placeholder;
+    }
+    
+    if (singleSelect && value.length > 0) {
+     
+      const selectedOption = options.find(([val]) => val === value[0]);
+       if(!showDescription){
+              return selectedOption ? ` ${selectedOption[1]}` : value[0];
+
+      }
+      return selectedOption ? `${selectedOption[0]} - ${selectedOption[1]}` : value[0];
+    }
+    
+    return `${value.length} ${label} selected`;
+  };
 
   return (
     <div className="w-full">
@@ -100,11 +142,9 @@ const MultiSelectDropdown = ({
         >
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              {value.length === 0 ? (
-                <span className="text-gray-500 text-sm">{placeholder}</span>
-              ) : (
-                <span className="text-gray-900 text-sm">{value.length} selected</span>
-              )}
+              <span className={`text-sm ${value.length === 0 ? 'text-gray-500' : 'text-gray-900'}`}>
+                {getDisplayText()}
+              </span>
             </div>
             <div className="flex items-center space-x-2">
               {loading && (
@@ -152,8 +192,8 @@ const MultiSelectDropdown = ({
               </div>
             </div>
 
-            {/* Select All */}
-            {showSelectAll && filteredOptions.length > 0 && (
+            {/* Select All - Only show for multi-select */}
+            {showSelectAll && !singleSelect && filteredOptions.length > 0 && (
               <div className="border-b border-gray-200">
                 <div
                   className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
@@ -199,7 +239,7 @@ const MultiSelectDropdown = ({
                         <Check size={12} className="text-white" />
                       )}
                     </div>
-                    <span className="text-sm text-gray-900">{val} - {label}</span>
+                    <span className="text-sm text-gray-900"> {showDescription ? `${val} - ${label}` : label}</span>
                   </div>
                 ))
               )}
@@ -208,8 +248,8 @@ const MultiSelectDropdown = ({
         )}
       </div>
 
-      {/* Selected tags */}
-      {value.length > 0 && (
+      {/* Selected tags - Only show for multi-select */}
+      {value.length > 0 && !singleSelect && (
         <div className="mt-2">
           <div className="flex flex-wrap gap-1">
             {value.slice(0, 4).map((val, index) => {
