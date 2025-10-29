@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MultiSelectDropdown from '../ui/MultiSelectDropdown';
 import CompactYearCarousel from '../ui/ModernYearSlider';
+import { Rocket } from 'lucide-react';
 
 export interface ParameterFormData {
   reportSelection: string;
@@ -176,10 +177,10 @@ export const ParameterForm: React.FC<ParameterFormProps> = ({
   return (
     <div className="w-full border-b p-2 bg-gray-50/50">
       <div className="w-full">
-        {/* Form Grid - Full Width */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-          {/* Budget Year - Full Width in its column */}
-          <div className="w-full">
+       {/* Form Grid - Adjusted layout */}
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4 w-full">
+          {/* Budget Year - Takes 1.5 columns */}
+          <div className="md:col-span-1.5 lg:col-span-1.5">
             <CompactYearCarousel
               onChange={handleBudgetYearChange}
               value={formData.budgetYear}
@@ -188,8 +189,8 @@ export const ParameterForm: React.FC<ParameterFormProps> = ({
             />
           </div>
 
-          {/* Fund Codes - Full Width in its column */}
-          <div className="w-full">
+          {/* Fund Codes - Takes 1.25 columns (smaller) */}
+          <div className="md:col-span-1.25 lg:col-span-1.25">
             <MultiSelectDropdown
               label="Fund Codes"
               value={formData.fundCodes}
@@ -204,8 +205,8 @@ export const ParameterForm: React.FC<ParameterFormProps> = ({
             />
           </div>
 
-          {/* Departments - Full Width in its column */}
-          <div className="w-full">
+          {/* Departments - Takes 1.25 columns (smaller) */}
+          <div className="md:col-span-1.25 lg:col-span-1.25">
             <MultiSelectDropdown
               label="Departments"
               value={formData.departments}
@@ -228,9 +229,9 @@ export const ParameterForm: React.FC<ParameterFormProps> = ({
           <button
             onClick={() => onParametersSubmit(formData)}
             disabled={!isFormValid || disabled}
-            className="px-1.5 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="px-2.5 py-1.5 mt-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
-            Generate Report
+    <Rocket size={22} />
           </button>
         </div>
       </div>

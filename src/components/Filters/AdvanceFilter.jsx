@@ -57,15 +57,17 @@ const AdvanceFilter = forwardRef(
     };
 
     const hideChatToggle = () => {
-      setIsExpanded(false);
-      setMeasureFiltersRevQuery();
-      setMeasureFiltersExpQuery();
-      setDimensionFiltersExpQuery();
-      setDimensionFiltersRevQuery();
-      setDimensionFilters({});
-      setMeasureFilters({});
-
-      setSelectedReportType('full');
+      // Only reset if not in chat mode
+      if (selectedReportType !== 'chat') {
+        setIsExpanded(false);
+        setMeasureFiltersRevQuery();
+        setMeasureFiltersExpQuery();
+        setDimensionFiltersExpQuery();
+        setDimensionFiltersRevQuery();
+        setDimensionFilters({});
+        setMeasureFilters({});
+        setSelectedReportType('full');
+      }
     };
 
     // Expose handleSubmit method to parent component

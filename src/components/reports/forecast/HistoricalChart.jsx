@@ -12,8 +12,6 @@ import {
 import { formatCurrency } from '../../../utils/formatCurrency';
 import { CommonTooltip } from './CommonTooltip';
 
-
-
 export const HistoricalChart = ({ data, isFetching }) => {
   return (
     <>
@@ -52,7 +50,7 @@ export const HistoricalChart = ({ data, isFetching }) => {
               stroke="#6b7280"
               domain={[0, 'dataMax']}
             />
-<Tooltip content={<CommonTooltip showMetadata={true} />} />
+            <Tooltip content={<CommonTooltip showMetadata={true} />} />
             
             <Line 
               type="monotone" 
@@ -86,6 +84,15 @@ export const HistoricalChart = ({ data, isFetching }) => {
             <ReferenceLine x="2025-P8" stroke="#9ca3af" strokeDasharray="2 2" />
           </LineChart>
         </ResponsiveContainer>
+      </div>
+
+      {/* Data summary */}
+      <div className="mt-4 p-2 bg-gray-100 text-xs">
+        <div>Chart points: {data?.length || 0}</div>
+        <div>Fund codes in first point: {data?.[0]?.fundCodes?.length || 0}</div>
+        <div>Accounts in first point: {data?.[0]?.accounts?.length || 0}</div>
+        <div>Departments in first point: {data?.[0]?.departments?.length || 0}</div>
+        <div>Parent Dept IDs in first point: {data?.[0]?.parentDeptIds?.length || 0}</div>
       </div>
     </>
   );

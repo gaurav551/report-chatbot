@@ -10,7 +10,7 @@ export const transformHistoricalData = (historicalActuals) => {
   limitedData.forEach((item) => {
     const period = item.accounting_period;
     const year = item.budget_year;
-    const key = `${year}-P${period.toString().padStart(2, '0')}`;
+    const key = `${year}-${period.toString().padStart(2, '0')}`;
     
     if (!periodData[key]) {
       periodData[key] = {

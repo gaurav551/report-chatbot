@@ -117,7 +117,7 @@ const MultiSelectDropdown = ({
      
       const selectedOption = options.find(([val]) => val === value[0]);
        if(!showDescription){
-              return selectedOption ? ` ${selectedOption[1]}` : value[0];
+              return selectedOption ? ` ${label} Selected -  ${selectedOption[1]} ` : value[0];
 
       }
       return selectedOption ? `${selectedOption[0]} - ${selectedOption[1]}` : value[0];

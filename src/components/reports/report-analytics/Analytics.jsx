@@ -28,7 +28,8 @@ import {
   ChevronDown,
   ChevronUp,
   Eye,
-  EyeOff
+  EyeOff,
+  DollarSignIcon
 } from 'lucide-react';
 import { ReportBaseUrl, ReportFileName } from '../../../const/url';
 import { predictionData } from '../../forecasting/Forecasting';
@@ -265,7 +266,7 @@ const Analytics = () => {
                   {[
                     { key: 'forecast', label: 'Forecast', icon: TrendingUp },
                     { key: 'overview', label: 'Budget vs Actual Overview', icon: BarChart3 },
-                    { key: 'expenses', label: 'Expense Breakdown', icon: TrendingUp },
+                    { key: 'expenses', label: 'Expense Breakdown', icon: DollarSignIcon  },
                     { key: 'revenue', label: 'Revenue by Department', icon: PieChartIcon }
                   ].map(({ key, label, icon: Icon }) => (
                     <button

@@ -3,8 +3,9 @@ export interface Message {
   text: string;
   isUser: boolean;
   timestamp: Date;
-  type?: 'text' | 'report';
+  type?: "text" | "report";
   reportUrl?: string;
+  tableData?: Record<string, any>[]; // Add this line
 }
 
 export interface ChatSession {

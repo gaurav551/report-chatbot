@@ -12,7 +12,7 @@ const staticOptions = {
   forecastMethods: [
     ['linear', 'Linear'],
     ['YoY', 'Year over Year'],
-    ['mavg', 'Month Average']
+    ['mavg', '3 Months Moving Average']
   ]
 };
 

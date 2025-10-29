@@ -67,6 +67,7 @@ export const ChatMain: React.FC<ChatMainProps> = ({
     measures_filter_exp: null as string | null,
     measureFilters: null as Record<string, any> | null,
     dimensionFilters: null as Record<string, any> | null,
+    chat_message: null as string | null,
   });
 
   const [showParameterForm, setShowParameterForm] = useState(true);
@@ -105,106 +106,130 @@ export const ChatMain: React.FC<ChatMainProps> = ({
   }, [apiSessionId, onApiSessionIdChange]);
 
   const chatMutation = useMutation({
-    mutationFn: chatApi,
-    onSuccess: async (data: ChatApiResponse) => {
-      if (data.session_id && data.session_id !== apiSessionId) {
-        setApiSessionId(data.session_id);
-      }
-      console.log("mutation success", data);
+  mutationFn: chatApi,
+  onSuccess: async (data: ChatApiResponse) => {
+    if (data.session_id && data.session_id !== apiSessionId) {
+      setApiSessionId(data.session_id);
+    }
+    console.log("mutation success", data);
 
-      // Check if the response contains report outputs
-      const reportInfo = detectReportOutput(
-        data.reply,
-        session.userName,
-        data.session_id || apiSessionId
-      );
+    // Check if the response contains report outputs
+    // detectReportOutput now handles both old and new API formats
+    const reportInfo = detectReportOutput(
+      data,  // Pass the entire response object
+      session.userName,
+      data.session_id || apiSessionId
+    );
 
-      if (reportInfo && reportInfo.hasReport) {
-        console.log("reportInfo", reportInfo);
+    if (reportInfo.hasReport) {
+      console.log("reportInfo", reportInfo);
 
-        addBotMessage(
-          "Report generated successfully! You can view it below and download the files.",
-          "report",
-          reportInfo.reportUrl
-        );
-      } else {
-        // If no report, just add the text response
-        console.log("No report detected, adding text response");
-
-        addBotMessage(data.reply);
-      }
-    },
-    onError: (error) => {
-      console.error("Chat API error:", error);
       addBotMessage(
-        "Sorry, there was an error processing your request. Please try again."
+        "Report generated successfully! You can view it below and download the files.",
+        "report",
+        reportInfo.reportUrl || undefined
       );
-    },
-  });
+    } else if (reportInfo.message) {
+      // If no report, just add the text response
+      console.log("No report detected, adding text response");
+      addBotMessage(reportInfo.message);
+    }
+  },
+  onError: (error) => {
+    console.error("Chat API error:", error);
+    addBotMessage(
+      "Sorry, there was an error processing your request. Please try again."
+    );
+  },
+});
 
-  const reportGenerationMutation = useMutation({
-    mutationFn: generateReportApi,
-    onSuccess: async (data: any) => {
-      console.log("Report generation success", data);
+// ============================================
+// UPDATE in reportGenerationMutation.onSuccess
+// ============================================
+const reportGenerationMutation = useMutation({
+  mutationFn: generateReportApi,
+  onSuccess: async (data: any) => {
+    console.log("Report generation success", data);
 
-      const reportInfo = detectReportOutput(
-        data.report,
-        session.userName,
-        data.session_id || apiSessionId
-      );
+    const reportInfo = detectReportOutput(
+      data,
+      session.userName,
+      data.session_id || apiSessionId
+    );
 
-      if (reportInfo && reportInfo.hasReport) {
+    // Check if response contains table data
+    const hasTableData = data?.data && Array.isArray(data.data) && 
+                        data.data.length > 0 && 
+                        typeof data.data[0] === 'object' &&
+                        !('text_for_output' in data.data[0]);
+
+    if (reportInfo.message) {
+      if (reportInfo.hasReport) {
         console.log("reportInfo", reportInfo);
-
         addBotMessage(
           "Report generated successfully! You can view it below and download the files.",
           "report",
-          reportInfo.reportUrl
+          reportInfo.reportUrl || undefined,
+          hasTableData ? data.data : undefined // Pass table data
         );
+
         try {
           const forecastResult = await initForecastWorkspaceApi({
             user_id: session.userName,
             session_id: data.session_id || apiSessionId,
-            budgetYear: 2022, // or get this from your state/props if needed
+            budgetYear: 2022,
           });
           console.log("Forecast workspace API success:", forecastResult);
         } catch (error) {
           console.error("Forecast workspace API error:", error);
-          // Handle error as needed - maybe show a warning but don't stop the flow
         }
+      } else if (hasTableData) {
+        // Display table data
+        console.log("Displaying table data");
+        addBotMessage(
+          reportInfo.message || "Here is the data:",
+          "text",
+          undefined,
+          data.data // Pass table data
+        );
       } else {
-        // If no report, just add the text response
-        console.log("No report detected, adding text response");
-
-        addBotMessage(data.reply);
+        // Display text message
+        console.log("Displaying response:", reportInfo.message);
+        addBotMessage(reportInfo.message);
       }
-    },
-    onError: (error) => {
-      console.error("Report generation error:", error);
-      addBotMessage(
-        "Sorry, there was an error generating the report. Please try again."
-      );
-    },
-  });
+    } else {
+      console.warn("No message content found in response");
+      addBotMessage("No response received. Please try again.");
+    }
+  },
+  onError: (error) => {
+    console.error("Report generation error:", error);
+    addBotMessage(
+      "Sorry, there was an error generating the report. Please try again."
+    );
+  },
+});
 
-  const addBotMessage = (
-    text: string,
-    type: "text" | "report" = "text",
-    reportUrl?: string
-  ) => {
-    // Ignore default message, because username is already sent
-    if (text.trim() === "Please enter your user ID (default: Guest):") return;
+const addBotMessage = (
+  text: string,
+  type: "text" | "report" = "text",
+  reportUrl?: string,
+  tableData?: Record<string, any>[] // Add this parameter
+) => {
+  // Ignore default message, because username is already sent
+  if (text.trim() === "Please enter your user ID (default: Guest):") return;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text,
-      isUser: false,
-      timestamp: new Date(),
-      type,
-      reportUrl,
-    };
-    setMessages((prev) => [...prev, newMessage]);
+  const newMessage: Message = {
+    id: Date.now().toString(),
+    text,
+    isUser: false,
+    timestamp: new Date(),
+    type,
+    reportUrl,
+    tableData, // Add this line
   };
+  setMessages((prev) => [...prev, newMessage]);
+};
 
   const initializeChat = async () => {
     setIsInitializing(true);
@@ -260,6 +285,7 @@ export const ChatMain: React.FC<ChatMainProps> = ({
       measures_filter_exp: null,
       measureFilters: null,
       dimensionFilters: null,
+      chat_message: null,
     });
 
     // Initialize chat with API
@@ -334,6 +360,8 @@ export const ChatMain: React.FC<ChatMainProps> = ({
       measures_filter_exp: filters.measures_filter_exp,
       measureFilters: filters.measureFilters,
       dimensionFilters: filters.dimensionFilters,
+ ...(filters.chat_message?.trim() && { chat_message: filters.chat_message }),
+...{ start_chat: !!(filters.chat_message?.trim()) }
     };
 
     console.log("Generating report with:", reportRequest);
@@ -380,6 +408,7 @@ export const ChatMain: React.FC<ChatMainProps> = ({
       measures_filter_exp: measureFilterExpQuery || null,
       measureFilters: measureFilters || null,
       dimensionFilters: dimensionFilters || null,
+      chat_message: text || null,
     };
     setFilterParams(updatedFilters);
 
@@ -466,23 +495,23 @@ export const ChatMain: React.FC<ChatMainProps> = ({
           </div>
         ) : (
           <div className="px-3 space-y-4 max-w-none">
-            {/* Messages */}
-            {messages.map((message) => (
-              <div key={message.id} className="w-full">
-                <ChatMessage
-                  key={message.id}
-                  message={message}
-                  userName={session?.userName}
-                  sessionId={apiSessionId}
-                />
-              </div>
-            ))}
+           {messages.map((message) => (
+  <div key={message.id} className="w-full">
+    <ChatMessage
+      key={message.id}
+      message={message}
+      userName={session?.userName}
+      sessionId={apiSessionId}
+      tableData={message.tableData} // Pass table data as prop
+    />
+  </div>
+))}
             {(chatMutation.isPending || reportGenerationMutation.isPending) && (
               <div className="flex items-center space-x-3 text-gray-500 px-4 py-3 bg-gray-50 rounded-xl max-w-sm">
                 <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
                 <span className="text-sm font-medium">
                   {reportGenerationMutation.isPending
-                    ? "Generating report..."
+                    ? !chatEnabled ? "Generating report..." : "Thinking.."
                     : "AI is thinking..."}
                 </span>
               </div>

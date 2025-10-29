@@ -58,7 +58,6 @@ export const getSalesFcast = async ({
     const params = new URLSearchParams();
     params.append('user_id', user_id.toString());
     params.append('session_id', session_id.toString());
-    params.append('as_of_date', as_of_date.toString());
     params.append('past_years', past_years.toString() || '3');
 
     // Handle arrays by adding multiple values with same key

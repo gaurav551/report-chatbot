@@ -33,7 +33,7 @@ export const ForecastChart = ({ data, isFetching }) => {
     }
   }
 
-  return <CommonTooltip active={active} payload={payload} label={label} />;
+  return <CommonTooltip active={active} showMetadata payload={payload} label={label} />;
 };
 
   return (
@@ -81,13 +81,14 @@ export const ForecastChart = ({ data, isFetching }) => {
               />
               <Tooltip content={CustomTooltipWrapper} />
               
-              {data.some(d => d.linear > 0) && (
+             {data.some(d => d.linear > 0) && (
                 <Line 
                   type="monotone" 
                   dataKey="linear" 
                   stroke="#3b82f6" 
                   strokeWidth={2}
                   name="Linear"
+                  strokeDasharray="3 3"
                   dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
                 />
               )}

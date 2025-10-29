@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getSalesFcast } from '../../../services/chatService';
 import { FilterSection } from './FilterSection';
@@ -8,6 +8,20 @@ import { transformForecastData, transformHistoricalData } from '../../../utils/c
 import { ErrorState, LoadingState } from './LoadingState';
 
 const API_BASE_URL = 'https://agentic.aiweaver.ai/api';
+
+const fetchDimensions = async () => {
+  const userId = localStorage.getItem('user');
+  const sessionIdLocal = localStorage.getItem('session_id');
+  
+  const url = `${API_BASE_URL}/rpt2/forecast-dimensions?user_id=${encodeURIComponent(userId)}&session_id=${encodeURIComponent(sessionIdLocal)}`;
+  const res = await fetch(url);
+  
+  if (!res.ok) {
+    throw new Error(`API request failed with status ${res.status}`);
+  }
+  
+  return res.json();
+};
 
 export const RevenueExpenseForecast = ({ userName, sessionId }) => {
   const [filters, setFilters] = useState({
@@ -19,59 +33,37 @@ export const RevenueExpenseForecast = ({ userName, sessionId }) => {
     forecastMethods: []
   });
 
-  const [dimensions, setDimensions] = useState({
-    fundCodes: [],
-    rollupDepartments: [],
-    departments: [],
-    accounts: [],
+  // Fetch dimensions using react-query with refetchOnWindowFocus
+  const { data: dimensionsData, isLoading: isDimensionsLoading } = useQuery({
+    queryKey: ['forecast-dimensions'],
+    queryFn: fetchDimensions,
+    refetchOnWindowFocus: true,
   });
 
-  const [isDimensionsLoading, setIsDimensionsLoading] = useState(true);
+  // Format dimensions
+  const dimensions = useMemo(() => {
+    if (!dimensionsData?.dimensions) {
+      return {
+        fundCodes: [],
+        rollupDepartments: [],
+        departments: [],
+        accounts: [],
+      };
+    }
 
-  // Load dimensions once on mount
-  useEffect(() => {
-    const loadDimensions = async () => {
-      try {
-        const userId = localStorage.getItem('user');
-        const sessionIdLocal = localStorage.getItem('session_id');
-        
-        const url = `${API_BASE_URL}/rpt2/forecast-dimensions?user_id=${encodeURIComponent(userId)}&session_id=${encodeURIComponent(sessionIdLocal)}`;
-        const res = await fetch(url);
-        
-        if (!res.ok) {
-          throw new Error(`API request failed with status ${res.status}`);
-        }
-        
-        const data = await res.json();
-        
-        const formatDimension = (dimensionArray) => {
-          return dimensionArray?.map(item => [item.code, item.label || item.code]) || [];
-        };
-        
-        setDimensions({
-          fundCodes: formatDimension(data.dimensions?.fund_code),
-          rollupDepartments: formatDimension(data.dimensions?.parent_deptid),
-          departments: formatDimension(data.dimensions?.deptid),
-          accounts: formatDimension(data.dimensions?.account),
-        });
-        
-      } catch (err) {
-        console.error('Error loading dimensions:', err);
-        setDimensions({
-          fundCodes: [],
-          rollupDepartments: [],
-          departments: [],
-          accounts: [],
-        });
-      } finally {
-        setIsDimensionsLoading(false);
-      }
+    const formatDimension = (dimensionArray) => {
+      return dimensionArray?.map(item => [item.code, item.label || item.code]) || [];
     };
 
-    loadDimensions();
-  }, []);
+    return {
+      fundCodes: formatDimension(dimensionsData.dimensions.fund_code),
+      rollupDepartments: formatDimension(dimensionsData.dimensions.parent_deptid),
+      departments: formatDimension(dimensionsData.dimensions.deptid),
+      accounts: formatDimension(dimensionsData.dimensions.account),
+    };
+  }, [dimensionsData]);
 
-  // Single API call for all data
+  // Single API call for all data with auto-refetch on tab switch
   const { data: forecastData, isLoading, error, isFetching } = useQuery({
     queryKey: ['forecast', userName, sessionId, filters],
     queryFn: () => getSalesFcast({
@@ -83,11 +75,10 @@ export const RevenueExpenseForecast = ({ userName, sessionId }) => {
       account: filters.accounts,
       past_years: filters.pastYears,
       forecast_method: filters.forecastMethods,
-      as_of_date: new Date().toISOString().split('T')[0],
+      as_of_date:'',
     }),
     enabled: !!(userName && sessionId),
-    refetchOnWindowFocus: false,
-    staleTime: 30000,
+    refetchOnWindowFocus: true,
   });
 
   // Transform data for charts
